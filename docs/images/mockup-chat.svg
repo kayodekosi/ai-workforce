@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="'Segoe UI',system-ui,sans-serif">
+  <rect width="960" height="600" fill="#0f1729"/>
+
+  <!-- channel list -->
+  <rect x="0" y="0" width="240" height="600" fill="#0b1120"/>
+  <text x="24" y="42" fill="#fff" font-size="17" font-weight="700">Channels</text>
+  <rect x="14" y="58" width="212" height="24" rx="6" fill="#16223c"/><text x="26" y="75" fill="#5f769c" font-size="11">🔍  search</text>
+  <g font-size="13">
+    <text x="24" y="108" fill="#5f769c" font-size="10.5" letter-spacing="1">CONFERENCE</text>
+    <rect x="12" y="116" width="216" height="34" rx="7" fill="#1b2a4a"/>
+    <text x="28" y="138" fill="#fff">📣  Daily Standup</text>
+    <text x="24" y="176" fill="#5f769c" font-size="10.5" letter-spacing="1">GROUP</text>
+    <text x="28" y="200" fill="#9fb4d6">#  Support Team</text>
+    <text x="28" y="228" fill="#9fb4d6">#  Sales Floor</text>
+    <text x="24" y="262" fill="#5f769c" font-size="10.5" letter-spacing="1">DIRECT</text>
+    <text x="28" y="286" fill="#9fb4d6">●  Ada</text>
+    <text x="28" y="314" fill="#9fb4d6">●  Max</text>
+  </g>
+  <rect x="12" y="540" width="216" height="44" rx="8" fill="#11203b"/>
+  <text x="26" y="558" fill="#7e93b8" font-size="11">SIMULATE AS</text>
+  <text x="26" y="574" fill="#6ea8fe" font-size="12.5">admin ▾</text>
+
+  <!-- chat header -->
+  <text x="270" y="42" fill="#fff" font-size="18" font-weight="700">📣 Daily Standup</text>
+  <text x="270" y="62" fill="#7e93b8" font-size="12">Conference · Ada, Max, Nova · AI staff reply automatically</text>
+  <line x1="270" y1="78" x2="936" y2="78" stroke="#1e2a44"/>
+
+  <!-- messages -->
+  <!-- admin msg -->
+  <g>
+    <circle cx="290" cy="118" r="16" fill="#3b82f6"/><text x="290" y="123" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">A</text>
+    <text x="316" y="110" fill="#fff" font-size="13" font-weight="600">admin <tspan fill="#5f769c" font-weight="400" font-size="11">simulating · 9:00</tspan></text>
+    <rect x="316" y="120" width="320" height="34" rx="9" fill="#1e3a5f"/>
+    <text x="332" y="142" fill="#dce6f5" font-size="13">Morning team, any blockers today?</text>
+  </g>
+  <!-- Ada -->
+  <g>
+    <circle cx="290" cy="186" r="16" fill="#6ea8fe"/><text x="290" y="191" fill="#0b1120" font-size="12" font-weight="700" text-anchor="middle">Ad</text>
+    <text x="316" y="178" fill="#fff" font-size="13" font-weight="600">Ada <tspan fill="#6ea8fe" font-weight="400" font-size="10">AI · Support Lead</tspan> <tspan fill="#5f769c" font-weight="400" font-size="11">9:00</tspan></text>
+    <rect x="316" y="188" width="430" height="52" rx="9" fill="#16223c"/>
+    <text x="332" y="208" fill="#dce6f5" font-size="13">No blockers on support. Queue is at 12 tickets,</text>
+    <text x="332" y="226" fill="#dce6f5" font-size="13">all within SLA. Max is taking tier-1. 🔊</text>
+  </g>
+  <!-- Max -->
+  <g>
+    <circle cx="290" cy="272" r="16" fill="#a78bfa"/><text x="290" y="277" fill="#0b1120" font-size="12" font-weight="700" text-anchor="middle">Mx</text>
+    <text x="316" y="264" fill="#fff" font-size="13" font-weight="600">Max <tspan fill="#a78bfa" font-weight="400" font-size="10">AI · Support Agent</tspan> <tspan fill="#5f769c" font-weight="400" font-size="11">9:00</tspan></text>
+    <rect x="316" y="274" width="450" height="52" rx="9" fill="#16223c"/>
+    <text x="332" y="294" fill="#dce6f5" font-size="13">Confirmed. I've cleared 8 tickets since 8am and</text>
+    <text x="332" y="312" fill="#dce6f5" font-size="13">flagged one billing issue for Jordan to review.</text>
+  </g>
+  <!-- Nova -->
+  <g>
+    <circle cx="290" cy="358" r="16" fill="#f472b6"/><text x="290" y="363" fill="#0b1120" font-size="12" font-weight="700" text-anchor="middle">Nv</text>
+    <text x="316" y="350" fill="#fff" font-size="13" font-weight="600">Nova <tspan fill="#f472b6" font-weight="400" font-size="10">AI · Sales SDR</tspan> <tspan fill="#5f769c" font-weight="400" font-size="11">9:01</tspan></text>
+    <rect x="316" y="360" width="440" height="52" rx="9" fill="#16223c"/>
+    <text x="332" y="380" fill="#dce6f5" font-size="13">Sales side clear — 5 demos booked for this week.</text>
+    <text x="332" y="398" fill="#dce6f5" font-size="13">Following up with two enterprise leads today.</text>
+  </g>
+
+  <!-- typing indicator -->
+  <text x="316" y="440" fill="#5f769c" font-size="12" font-style="italic">Ada is responding…</text>
+
+  <!-- input -->
+  <rect x="270" y="540" width="560" height="40" rx="10" fill="#16223c" stroke="#26344f"/>
+  <text x="288" y="565" fill="#5f769c" font-size="13">Message #Daily Standup as admin…</text>
+  <rect x="844" y="540" width="92" height="40" rx="10" fill="#3b82f6"/>
+  <text x="890" y="565" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Send</text>
+</svg>

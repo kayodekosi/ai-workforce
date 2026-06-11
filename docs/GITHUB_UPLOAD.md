@@ -52,3 +52,46 @@ git push -u origin main
 
 **Highly recommended:** record a short demo GIF/video of the chat simulation and
 put it at the top of the README — see `docs/GROW_THE_PROJECT.md` for how to grow it.
+
+---
+
+## Updating a repo you ALREADY uploaded
+
+If you pushed an earlier version and want to bring it up to date with this one
+(the compile fix, the Docker files, the mockups, the new README), you have two easy paths.
+
+### Path A — git command line (cleanest)
+From inside your local project folder that's already linked to the repo:
+```bash
+# copy the new files over your local copy first (or unzip this package on top), then:
+git add .
+git commit -m "Add Docker support, interface mockups, port docs; fix WebhookConnector compile error"
+git push
+```
+That single push updates everything on GitHub.
+
+If you DON'T have the repo cloned locally yet:
+```bash
+git clone https://github.com/kayodekosi/ai-workforce.git
+cd ai-workforce
+# copy the new files in (overwrite), then:
+git add .
+git commit -m "Update: Docker, mockups, docs, compile fix"
+git push
+```
+
+### Path B — GitHub website (no git)
+1. Open your repo on github.com
+2. To replace a file: click it → pencil (✏️ Edit) → paste the new contents → **Commit changes**
+3. To add new files (Dockerfile, docker-compose.yml, docs/images/*): **Add file → Upload files** → drag them in → **Commit changes**
+4. GitHub keeps full history, so nothing is lost — each save is a new commit
+
+### What changed in this update (so you know what to replace)
+- `src/main/java/com/knatware/aiworkforce/connector/WebhookConnector.java` — compile fix
+- `Dockerfile`, `docker-compose.yml`, `.dockerignore` — new
+- `docs/images/` — three SVG interface mockups — new
+- `README.md` — screenshots, port-change, and Docker sections added
+- `docs/GITHUB_UPLOAD.md` — this section
+
+The simplest approach: unzip this whole package over your local copy, then do the
+Path A `git add . && git commit && git push`. Done.

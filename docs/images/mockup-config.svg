@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" font-family="'Segoe UI',system-ui,sans-serif">
+  <rect width="960" height="600" fill="#0f1729"/>
+  <!-- dimmed backdrop hint -->
+  <rect width="960" height="600" fill="#0b1120" opacity="0.4"/>
+
+  <!-- modal panel -->
+  <rect x="170" y="40" width="620" height="520" rx="16" fill="#16223c" stroke="#26344f"/>
+  <text x="200" y="80" fill="#fff" font-size="19" font-weight="700">Onboard / Configure Staff</text>
+  <text x="200" y="100" fill="#7e93b8" font-size="12.5">Every field is configurable — identity, role, reporting line, AI brain &amp; voice</text>
+  <text x="752" y="84" fill="#6f86ad" font-size="20">✕</text>
+
+  <!-- avatar + type toggle -->
+  <circle cx="232" cy="156" r="28" fill="#6ea8fe"/><text x="232" y="163" fill="#0b1120" font-size="18" font-weight="700" text-anchor="middle">Ad</text>
+  <text x="272" y="142" fill="#7e93b8" font-size="11">PHOTO</text>
+  <rect x="272" y="150" width="92" height="26" rx="6" fill="#1e2d4a"/><text x="318" y="167" fill="#9fb4d6" font-size="11" text-anchor="middle">Upload image</text>
+  <rect x="520" y="138" width="118" height="26" rx="13" fill="#1e3a5f"/><text x="549" y="155" fill="#6ea8fe" font-size="11" text-anchor="middle">● AI</text><text x="610" y="155" fill="#5f769c" font-size="11" text-anchor="middle">Human</text>
+
+  <!-- form fields helper -->
+  <!-- row 1 -->
+  <g font-size="11">
+    <text x="200" y="208" fill="#5f769c">FULL NAME</text>
+    <rect x="200" y="216" width="270" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="214" y="238" fill="#dce6f5" font-size="13">Ada</text>
+    <text x="500" y="208" fill="#5f769c">EMAIL</text>
+    <rect x="500" y="216" width="260" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="514" y="238" fill="#dce6f5" font-size="13">ada@example.com</text>
+  </g>
+  <!-- row 2 -->
+  <g font-size="11">
+    <text x="200" y="270" fill="#5f769c">POSITION</text>
+    <rect x="200" y="278" width="175" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="214" y="300" fill="#dce6f5" font-size="13">Support Lead</text>
+    <text x="392" y="270" fill="#5f769c">DEPARTMENT</text>
+    <rect x="392" y="278" width="175" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="406" y="300" fill="#dce6f5" font-size="13">Customer Support ▾</text>
+    <text x="584" y="270" fill="#5f769c">EXTENSION</text>
+    <rect x="584" y="278" width="176" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="598" y="300" fill="#dce6f5" font-size="13">1001</text>
+  </g>
+  <!-- row 3 -->
+  <g font-size="11">
+    <text x="200" y="332" fill="#5f769c">LEVEL</text>
+    <rect x="200" y="340" width="175" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="214" y="362" fill="#dce6f5" font-size="13">Team Lead ▾</text>
+    <text x="392" y="332" fill="#5f769c">REPORTS TO</text>
+    <rect x="392" y="340" width="368" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="406" y="362" fill="#8aa0c6" font-size="13">— none (top of chain) ▾</text>
+  </g>
+  <!-- prompt -->
+  <text x="200" y="396" fill="#5f769c" font-size="11">SYSTEM PROMPT (AI PERSONA)</text>
+  <rect x="200" y="404" width="560" height="48" rx="7" fill="#0f1c33" stroke="#26344f"/>
+  <text x="214" y="424" fill="#dce6f5" font-size="12.5">You are Ada, a calm, expert customer support lead.</text>
+  <text x="214" y="442" fill="#dce6f5" font-size="12.5">Resolve escalations clearly and kindly.</text>
+
+  <!-- AI backend + voice -->
+  <g font-size="11">
+    <text x="200" y="476" fill="#5f769c">AI BACKEND</text>
+    <rect x="200" y="484" width="135" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="214" y="506" fill="#dce6f5" font-size="13">n8n ▾</text>
+    <text x="352" y="476" fill="#5f769c">MODEL</text>
+    <rect x="352" y="484" width="120" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="366" y="506" fill="#dce6f5" font-size="13">gpt-4o</text>
+    <text x="490" y="476" fill="#5f769c">VOICE</text>
+    <rect x="490" y="484" width="80" height="34" rx="7" fill="#11314a"/><circle cx="556" cy="501" r="9" fill="#34d399"/><text x="506" y="506" fill="#34d399" font-size="12">On</text>
+    <rect x="586" y="484" width="174" height="34" rx="7" fill="#0f1c33" stroke="#26344f"/><text x="600" y="506" fill="#dce6f5" font-size="13">elevenlabs · Ada ▾</text>
+  </g>
+
+  <!-- footer buttons -->
+  <text x="612" y="556" fill="#9fb4d6" font-size="13" text-anchor="middle">Cancel</text>
+  <rect x="664" y="528" width="100" height="34" rx="8" fill="#3b82f6"/>
+  <text x="714" y="550" fill="#fff" font-size="13" font-weight="600" text-anchor="middle">Save Staff</text>
+</svg>

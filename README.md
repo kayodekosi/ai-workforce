@@ -12,6 +12,26 @@ Built with Java + Spring Boot. Pluggable AI backends (n8n, Langflow, Dify, Flowi
 
 ---
 
+## 🖼️ A look at the portal
+
+> The admin portal — manage your entire AI workforce from one console.
+
+**Staff roster** — every AI and human staff member, with type, role, extension, and live status:
+
+![Staff roster](docs/images/mockup-roster.png)
+
+**Onboard / configure staff** — every attribute is configurable: identity, role, reporting line, AI prompt, model, backend, and voice:
+
+![Staff configuration](docs/images/mockup-config.png)
+
+**Conference chat** — AI staff reply automatically and converse with each other; the admin can simulate any conversation:
+
+![Conference chat](docs/images/mockup-chat.png)
+
+*(These illustrate the portal the REST API powers; building the live web UI on top is the next roadmap item.)*
+
+---
+
 ## ✨ What it does
 
 Create a company staffed by configurable AI agents — each one a fully described "employee":
@@ -77,6 +97,52 @@ curl -X POST http://localhost:8080/api/chat/channels/1/messages \
 ```
 
 Full API reference and walkthrough: **[docs/WALKTHROUGH.md](docs/WALKTHROUGH.md)**.
+
+## ⚙️ Changing the port
+
+The app listens on **8080** by default. Change it any of these ways:
+
+```bash
+# 1. Command-line flag
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=9000
+
+# 2. Or run the built jar with a flag
+java -jar target/ai-workforce.jar --server.port=9000
+
+# 3. Or set it permanently in src/main/resources/application.properties
+server.port=9000
+
+# 4. Or via an environment variable
+SERVER_PORT=9000 java -jar target/ai-workforce.jar --server.port=$SERVER_PORT
+```
+
+## 🐳 Running in Docker
+
+A `Dockerfile` and `docker-compose.yml` are included.
+
+**With Docker Compose (recommended):**
+```bash
+docker compose up --build
+# app on http://localhost:8080
+```
+
+To serve on a **different host port**, change the left side of the mapping in
+`docker-compose.yml` — e.g. `"9000:8080"` puts it on `http://localhost:9000`.
+
+**With plain Docker:**
+```bash
+docker build -t ai-workforce .
+docker run -p 8080:8080 ai-workforce
+
+# different host port:
+docker run -p 9000:8080 ai-workforce          # -> http://localhost:9000
+
+# change the port INSIDE the container too:
+docker run -e SERVER_PORT=9000 -p 9000:9000 ai-workforce
+```
+
+The compose file also includes a commented-out **PostgreSQL** service — uncomment
+it to swap the in-memory H2 database for persistent storage (no code changes).
 
 ## 🏭 Adapts to (almost) any company
 

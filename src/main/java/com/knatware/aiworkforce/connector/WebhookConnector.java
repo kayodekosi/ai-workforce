@@ -38,7 +38,8 @@ public class WebhookConnector implements AiConnector {
                     + " endpoint not configured] (echo) " + message);
         }
         try {
-            Map<?, ?> resp = http.post()
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resp = http.post()
                     .uri(endpoint)
                     .body(Map.of(
                             "systemPrompt", staff.getSystemPrompt() == null ? "" : staff.getSystemPrompt(),
