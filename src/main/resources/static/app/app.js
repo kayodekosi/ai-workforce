@@ -46,23 +46,72 @@ async function doChange(){
   }catch(e){ msg.innerHTML = `<div class="msg err">${e.message}</div>`; }
 }
 
-function logout(){ TOKEN=null; ROLE=null; location.reload(); }
+function logout(){
+  TOKEN=null; ROLE=null; USER=null;
+  try{ if(SUB) SUB.unsubscribe(); }catch(_){}
+  try{ if(STOMP){ STOMP.deactivate ? STOMP.deactivate() : STOMP.disconnect(); } }catch(_){}
+  location.reload();
+}
 
 function enterApp(){
   el('login').classList.add('hidden');
   el('shell').classList.remove('hidden');
   el('whoami').textContent = USER;
   el('sideRole').textContent = ROLE + ' PORTAL';
+  connectWs();
   loadAll();
+}
+
+// ---------- WEBSOCKET (real-time chat) ----------
+let STOMP = null, SUB = null, WS_READY = false;
+function connectWs(){
+  try{
+    const sock = new SockJS('/ws');
+    STOMP = window.StompJs ? new window.StompJs.Client({webSocketFactory:()=>sock})
+                           : Stomp.over(sock);
+    if(STOMP.activate){ // stompjs v7 Client API
+      STOMP.onConnect = ()=>{ WS_READY=true; if(CURRENT_CHANNEL) subscribeChannel(CURRENT_CHANNEL.id); };
+      STOMP.activate();
+    } else { // fallback older API
+      STOMP.connect({}, ()=>{ WS_READY=true; if(CURRENT_CHANNEL) subscribeChannel(CURRENT_CHANNEL.id); });
+    }
+  }catch(e){ console.warn('WebSocket unavailable, falling back to fetch:', e); }
+}
+function subscribeChannel(id){
+  if(!STOMP || !WS_READY) return;
+  if(SUB){ try{ SUB.unsubscribe(); }catch(_){} SUB=null; }
+  const topic = '/topic/channels/'+id;
+  const handler = (frame)=>{ try{ appendLiveMessage(JSON.parse(frame.body)); }catch(_){} };
+  SUB = STOMP.subscribe ? STOMP.subscribe(topic, handler)
+                        : STOMP.subscribe(topic, handler);
+}
+function appendLiveMessage(m){
+  if(!CURRENT_CHANNEL) return;
+  const wrap = el('chatMessages');
+  const mine = m.sender && USER && m.sender.fullName===USER;
+  const fn = m.sender ? m.sender.fullName : '?';
+  const role = m.sender && m.sender.type==='AI' ? `<small>AI · ${m.sender.function||m.sender.position||''}</small>` : '';
+  const div = document.createElement('div');
+  div.className = 'bubble' + (mine?' me':'');
+  div.innerHTML = `<div class="who">${fn} ${role} ${m.voiceClipUrl?'🔊':''}</div>
+    <div class="txt">${(m.content||'').replace(/</g,'&lt;')}</div>`;
+  // avoid duplicating the just-sent echo if already present by id
+  if(m.id && wrap.querySelector(`[data-mid="${m.id}"]`)) return;
+  div.setAttribute('data-mid', m.id||'');
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
 }
 
 // ---------- NAV ----------
 function nav(view){
-  ['staff','company','chat'].forEach(v=>{
+  ['staff','company','chat','calendar','connectors','settings'].forEach(v=>{
     el('view-'+v).classList.toggle('hidden', v!==view);
   });
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
   if(view==='chat') loadChannels();
+  if(view==='calendar') loadMeetings();
+  if(view==='connectors') loadConnectors();
+  if(view==='settings') loadSettings();
 }
 
 async function loadAll(){ await Promise.all([loadStaff(), loadCompany()]); }
@@ -183,13 +232,14 @@ async function openChannel(id){
   el('composer').style.display='flex';
   const msgs = await api(`/chat/channels/${id}/messages`);
   renderMessages(msgs);
+  subscribeChannel(id);
 }
 function renderMessages(msgs){
   el('chatMessages').innerHTML = msgs.map(m=>{
     const mine = m.sender && USER && m.sender.fullName===USER;
     const fn = m.sender ? m.sender.fullName : '?';
     const role = m.sender && m.sender.type==='AI' ? `<small>AI · ${m.sender.function||m.sender.position||''}</small>` : '';
-    return `<div class="bubble ${mine?'me':''}">
+    return `<div class="bubble ${mine?'me':''}" data-mid="${m.id||''}">
       <div class="who">${fn} ${role} ${m.voiceClipUrl?'🔊':''}</div>
       <div class="txt">${(m.content||'').replace(/</g,'&lt;')}</div></div>`;
   }).join('') || `<div style="color:var(--muted2)">No messages yet — say hello below.</div>`;
@@ -199,14 +249,16 @@ async function sendMsg(){
   if(!CURRENT_CHANNEL) return;
   const input = el('msgInput'); const content = input.value.trim();
   if(!content) return;
-  // pick first member as the "sender" identity for the simulation
   const senderId = (CURRENT_CHANNEL.members && CURRENT_CHANNEL.members[0] && CURRENT_CHANNEL.members[0].id) || (STAFF[0]&&STAFF[0].id);
   input.value='';
   try{
+    // Messages arrive via the WebSocket broadcast; if WS is down, fall back to refetch.
     await api(`/chat/channels/${CURRENT_CHANNEL.id}/messages`, {method:'POST',
       body:JSON.stringify({senderId, content})});
-    const msgs = await api(`/chat/channels/${CURRENT_CHANNEL.id}/messages`);
-    renderMessages(msgs);
+    if(!WS_READY){
+      const msgs = await api(`/chat/channels/${CURRENT_CHANNEL.id}/messages`);
+      renderMessages(msgs);
+    }
   }catch(e){ alert('Send failed: '+e.message); }
 }
 
@@ -216,3 +268,93 @@ document.addEventListener('change', e=>{
     el('aiFields').style.display = e.target.value==='AI' ? 'block' : 'none';
   }
 });
+
+// ---------- CALENDAR ----------
+const fmtWhen = (s,e)=>{
+  if(!s) return '—';
+  const d = new Date(s); const opts={month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'};
+  let out = d.toLocaleString(undefined,opts);
+  if(e){ const ed=new Date(e); out += ' – ' + ed.toLocaleString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+  return out;
+};
+async function loadMeetings(){
+  const list = await api('/meetings');
+  el('meetingRows').innerHTML = list.length ? list.map(m=>`
+    <tr>
+      <td><b style="color:#fff">${(m.title||'(untitled)').replace(/</g,'&lt;')}</b>
+          ${m.organiser?`<br><small style="color:var(--muted2)">by ${m.organiser.fullName}</small>`:''}</td>
+      <td>${fmtWhen(m.startTime,m.endTime)}</td>
+      <td>${(m.location||'—')}</td>
+      <td>${(m.attendees||[]).map(a=>a.fullName).join(', ')||'—'}</td>
+      <td style="text-align:right;"><button class="btn ghost sm" onclick="cancelMeeting(${m.id})">Cancel</button></td>
+    </tr>`).join('') : `<tr><td colspan="5" style="color:var(--muted2)">No meetings scheduled.</td></tr>`;
+}
+function openMeetingModal(){
+  el('meetingMsg').innerHTML='';
+  ['mTitle','mStart','mEnd','mLoc'].forEach(i=>el(i).value='');
+  el('mOrganiser').innerHTML = '<option value="">—</option>' + STAFF.map(s=>`<option value="${s.id}">${s.fullName}</option>`).join('');
+  el('mAttendees').innerHTML = STAFF.map(s=>
+    `<label style="text-transform:none;display:flex;align-items:center;gap:8px;margin-bottom:6px;color:var(--ink);font-size:13px;">
+      <input type="checkbox" value="${s.id}" style="width:auto;"> ${s.fullName} <span class="pill ${s.type==='AI'?'ai':'human'}">${s.type}</span></label>`
+  ).join('');
+  el('meetingModal').classList.remove('hidden');
+}
+async function saveMeeting(){
+  const msg = el('meetingMsg');
+  const toIso = v => v ? new Date(v).toISOString() : null;
+  const ids = [...document.querySelectorAll('#mAttendees input:checked')].map(c=>parseInt(c.value));
+  const body = {
+    title:el('mTitle').value, description:'', location:el('mLoc').value,
+    startTime:toIso(el('mStart').value), endTime:toIso(el('mEnd').value),
+    organiserId: el('mOrganiser').value ? parseInt(el('mOrganiser').value) : null,
+    attendeeIds: ids
+  };
+  if(!body.title || !body.startTime || !body.endTime){
+    msg.innerHTML = `<div class="msg err">Title, start and end are required.</div>`; return;
+  }
+  try{
+    const res = await fetch('/api/meetings', {method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},
+      body:JSON.stringify(body)});
+    if(res.status===409){ const j=await res.json(); msg.innerHTML=`<div class="msg err">${j.message}</div>`; return; }
+    if(!res.ok){ msg.innerHTML=`<div class="msg err">Failed (HTTP ${res.status})</div>`; return; }
+    closeModal('meetingModal'); loadMeetings();
+  }catch(e){ msg.innerHTML = `<div class="msg err">${e.message}</div>`; }
+}
+async function cancelMeeting(id){
+  await api('/meetings/'+id, {method:'DELETE'});
+  loadMeetings();
+}
+
+// ---------- CONNECTORS ----------
+function loadConnectors(){
+  const ai = STAFF.filter(s=>s.type==='AI');
+  el('connectorRows').innerHTML = ai.length ? ai.map(s=>`
+    <tr>
+      <td><span class="avatar" style="background:${colorFor(s.id)}">${initials(s.fullName)}</span>${s.fullName}</td>
+      <td><span class="pill ai">${s.connector||'NONE'}</span></td>
+      <td style="color:var(--muted2);font-size:12px;">${s.connectorEndpoint||'— (simulation)'}</td>
+      <td>${s.model||'—'}</td>
+      <td>${s.voiceEnabled ? '🔊 '+(s.voiceProvider||'on') : '—'}</td>
+    </tr>`).join('') : `<tr><td colspan="5" style="color:var(--muted2)">No AI staff yet.</td></tr>`;
+}
+
+// ---------- SETTINGS ----------
+function loadSettings(){
+  el('setUser').textContent = USER;
+  el('setRole').textContent = ROLE;
+  el('settingsMsg').innerHTML = '';
+}
+async function changeOwnPassword(){
+  const msg = el('settingsMsg');
+  const a = el('setNew').value, b = el('setNew2').value;
+  if(a!==b){ msg.innerHTML = `<div class="msg err">Passwords don't match.</div>`; return; }
+  try{
+    const r = await api('/auth/change-password', {method:'POST',
+      body:JSON.stringify({username:USER, oldPassword:el('setOld').value, newPassword:a})});
+    if(!r.ok){ msg.innerHTML = `<div class="msg err">${r.message}</div>`; return; }
+    if(r.token) TOKEN = r.token;
+    msg.innerHTML = `<div class="msg ok">${r.message}</div>`;
+    el('setOld').value=el('setNew').value=el('setNew2').value='';
+  }catch(e){ msg.innerHTML = `<div class="msg err">${e.message}</div>`; }
+}

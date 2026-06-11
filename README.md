@@ -187,7 +187,7 @@ This is a real, runnable platform, but every organisation's workflows differ.
 Langflow flows, designing your AI staff roster, or deploying to production —
 the author is happy to assist.
 
-📧 **Kayode Okosi** — [kayodeokosi@gmail.com](mailto:kayodeokosi@gmail.com)
+📧 **Kayode Okosi** — [kayodeokosi@gmail.com](mailto:kayodeokosi@gmail.com) · [kayode@knatware.com](mailto:kayode@knatware.com)
 🔗 [LinkedIn](https://www.linkedin.com/in/kayode-okosi) · [GitHub](https://github.com/kayodekosi)
 
 ## 🗺️ Roadmap (honest status)
@@ -200,9 +200,10 @@ This is a working platform with a clean, extensible architecture:
 - ✅ **Web admin UI** — single-page portal at `/app/` (login, staff management, company config, live chat simulation)
 - ✅ **JWT authentication + per-role authorization** (ADMIN vs OPERATOR; admin-only config writes)
 - ✅ **Welcome page** at `/` and Docker/Compose deployment
-- 🔜 Real-time chat via WebSockets (currently request/response)
+- ✅ **Real-time chat via WebSockets** (STOMP/SockJS; messages and AI replies stream live)
 - 🔜 Live voice synthesis wiring (connector hooks are in place; provider calls stubbed)
-- 🔜 Calendar/meeting scheduling and email integration
+- ✅ **Calendar / meeting scheduling** (with conflict detection on human attendees)
+- 🔜 Email integration
 
 Contributions welcome.
 

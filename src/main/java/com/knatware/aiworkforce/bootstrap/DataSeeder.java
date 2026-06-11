@@ -44,9 +44,9 @@ public class DataSeeder implements CommandLineRunner {
 
         // --- sample company ---
         Company company = new Company();
-        company.setName("Acme AI Operations");
+        company.setName("Knatware AI Company Ltd");
         company.setDescription("A fully AI-staffed customer operations company.");
-        company.setUrl("https://example.com");
+        company.setUrl("https://knatware.com");
         company.setAddress("1 Innovation Way");
         company.setIndustry("Customer Support");
         companies.save(company);
@@ -110,7 +110,7 @@ public class DataSeeder implements CommandLineRunner {
              AI-Workforce seeded.
              Default admin login:  username = admin   password = admin
              (You must change this password at first login.)
-             Sample company 'Acme AI Operations' created with AI staff.
+             Sample company 'Knatware AI Company Ltd' created with AI staff.
             ============================================================
             """);
     }

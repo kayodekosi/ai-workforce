@@ -112,7 +112,10 @@
     <button class="nav active" data-view="staff" onclick="nav('staff')">👥 Staff</button>
     <button class="nav" data-view="company" onclick="nav('company')">🏢 Company</button>
     <button class="nav" data-view="chat" onclick="nav('chat')">💬 Chat &amp; Conference</button>
-    <div class="foot">signed in as <b id="whoami"></b><br><a onclick="logout()">Sign out</a></div>
+    <button class="nav" data-view="calendar" onclick="nav('calendar')">📅 Calendar</button>
+    <button class="nav" data-view="connectors" onclick="nav('connectors')">🔌 Connectors</button>
+    <button class="nav" data-view="settings" onclick="nav('settings')">⚙️ Settings</button>
+    <div class="foot">signed in as <b id="whoami"></b><br><a href="#" onclick="logout();return false;" style="cursor:pointer;">Sign out</a></div>
   </div>
 
   <div class="main">
@@ -157,10 +160,51 @@
         </div>
       </div>
     </div>
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" class="hidden">
+      <div class="head">
+        <div><h1>Calendar</h1><div class="sub">Schedule meetings — conflicts on human attendees are auto-detected</div></div>
+        <button class="btn" onclick="openMeetingModal()">+ Schedule Meeting</button>
+      </div>
+      <table>
+        <thead><tr><th>Meeting</th><th>When</th><th>Where</th><th>Attendees</th><th></th></tr></thead>
+        <tbody id="meetingRows"></tbody>
+      </table>
+    </div>
+
+    <!-- CONNECTORS VIEW -->
+    <div id="view-connectors" class="hidden">
+      <div class="head"><div><h1>Connectors</h1><div class="sub">Which AI backend powers each AI staff member</div></div></div>
+      <div class="card" style="font-size:13px;color:var(--muted);">
+        AI staff can be powered by <b style="color:var(--ink)">n8n, Langflow, Dify, Flowise</b>, a custom webhook, or run in
+        <b style="color:var(--ink)">simulation</b> mode (no external setup). Configure each staff member's backend and endpoint in the Staff screen.
+      </div>
+      <table>
+        <thead><tr><th>AI Staff</th><th>Backend</th><th>Endpoint</th><th>Model</th><th>Voice</th></tr></thead>
+        <tbody id="connectorRows"></tbody>
+      </table>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div id="view-settings" class="hidden">
+      <div class="head"><div><h1>Settings</h1><div class="sub">Account &amp; system</div></div></div>
+      <div class="card" style="max-width:460px;">
+        <h3 style="color:#fff;font-size:15px;margin-bottom:14px;">Change password</h3>
+        <div id="settingsMsg"></div>
+        <div class="field"><label>Current password</label><input id="setOld" type="password"></div>
+        <div class="field"><label>New password (min 8)</label><input id="setNew" type="password"></div>
+        <div class="field"><label>Confirm new password</label><input id="setNew2" type="password"></div>
+        <button class="btn" onclick="changeOwnPassword()">Update password</button>
+      </div>
+      <div class="card" style="max-width:460px;font-size:13px;color:var(--muted);">
+        <h3 style="color:#fff;font-size:15px;margin-bottom:10px;">System</h3>
+        Signed in as <b style="color:var(--ink)" id="setUser"></b> · role <b style="color:var(--ink)" id="setRole"></b><br>
+        Auth: JWT (token expires after the configured window) · DB: in-memory H2<br>
+        Need help? <a href="mailto:kayodeokosi@gmail.com">kayodeokosi@gmail.com</a> · <a href="mailto:kayode@knatware.com">kayode@knatware.com</a>
+      </div>
+    </div>
   </div>
 </div>
-
-<!-- ===== STAFF MODAL ===== -->
 <div id="staffModal" class="overlay hidden">
   <div class="modal">
     <h3>Onboard / Configure Staff</h3>
@@ -220,6 +264,31 @@
   </div>
 </div>
 
+<!-- ===== MEETING MODAL ===== -->
+<div id="meetingModal" class="overlay hidden">
+  <div class="modal" style="width:520px;">
+    <h3>Schedule Meeting</h3>
+    <div class="sub">Pick attendees and a time — clashes with humans are blocked</div>
+    <div id="meetingMsg"></div>
+    <div class="field"><label>Title</label><input id="mTitle" placeholder="Sprint planning"></div>
+    <div class="grid2">
+      <div class="field"><label>Start</label><input id="mStart" type="datetime-local"></div>
+      <div class="field"><label>End</label><input id="mEnd" type="datetime-local"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Location / link</label><input id="mLoc" placeholder="Room 1 or video URL"></div>
+      <div class="field"><label>Organiser</label><select id="mOrganiser"></select></div>
+    </div>
+    <div class="field"><label>Attendees</label><div id="mAttendees" style="max-height:160px;overflow:auto;"></div></div>
+    <div class="actions">
+      <button class="btn ghost" onclick="closeModal('meetingModal')">Cancel</button>
+      <button class="btn" onclick="saveMeeting()">Schedule</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

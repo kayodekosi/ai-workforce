@@ -43,9 +43,12 @@ public class SecurityConfig {
             .headers(h -> h.frameOptions(f -> f.disable())) // allow H2 console frames
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // allow internal forwards (e.g. /app/ -> /app/index.html) and error dispatches
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.FORWARD,
+                                        jakarta.servlet.DispatcherType.ERROR).permitAll()
                 // --- public ---
                 .requestMatchers("/", "/index.html", "/app/**", "/static/**",
-                                 "/favicon.ico", "/error").permitAll()
+                                 "/favicon.ico", "/error", "/ws/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 // --- admin-only writes ---
