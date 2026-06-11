@@ -73,6 +73,15 @@ mvn spring-boot:run
 The app starts on `http://localhost:8080` with an in-memory database (zero setup)
 and seeds a sample AI-staffed company plus the default admin.
 
+- **Welcome page:** `http://localhost:8080/`
+- **Web admin portal:** `http://localhost:8080/app/`
+- **REST API:** `http://localhost:8080/api/...`
+
+### Authentication
+The API is secured with **JWT** and per-role access (ADMIN vs OPERATOR).
+Log in via `POST /api/auth/login` to get a token, then send it as
+`Authorization: Bearer <token>`. The web portal handles this for you.
+
 ### Default login
 ```
 username: admin
@@ -183,15 +192,16 @@ the author is happy to assist.
 
 ## 🗺️ Roadmap (honest status)
 
-This is a working **foundation** with clear extension points:
+This is a working platform with a clean, extensible architecture:
 
 - ✅ Domain model, admin API, chat (direct/group/conference), AI auto-reply
 - ✅ Pluggable connector layer + simulation mode (runs with zero external setup)
 - ✅ Default-admin seeding + forced password change
-- 🔜 Web admin UI (currently REST API + seed data; a front-end is the next layer)
+- ✅ **Web admin UI** — single-page portal at `/app/` (login, staff management, company config, live chat simulation)
+- ✅ **JWT authentication + per-role authorization** (ADMIN vs OPERATOR; admin-only config writes)
+- ✅ **Welcome page** at `/` and Docker/Compose deployment
 - 🔜 Real-time chat via WebSockets (currently request/response)
 - 🔜 Live voice synthesis wiring (connector hooks are in place; provider calls stubbed)
-- 🔜 Per-role authorization hardening + JWT/OAuth (starter uses open endpoints + Basic)
 - 🔜 Calendar/meeting scheduling and email integration
 
 Contributions welcome.

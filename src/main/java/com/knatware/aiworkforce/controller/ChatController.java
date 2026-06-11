@@ -27,6 +27,11 @@ public class ChatController {
         return chat.createChannel(req.name(), req.type() == null ? ChatChannel.ChannelType.DIRECT : req.type(), req.memberIds());
     }
 
+    @GetMapping("/channels")
+    public List<ChatChannel> listChannels() {
+        return chat.listChannels();
+    }
+
     @PostMapping("/channels/{channelId}/messages")
     public List<ChatMessage> post(@PathVariable Long channelId, @RequestBody PostMessageRequest req) {
         return chat.postMessage(channelId, req.senderId(), req.content());

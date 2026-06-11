@@ -95,3 +95,20 @@ git push
 
 The simplest approach: unzip this whole package over your local copy, then do the
 Path A `git add . && git commit && git push`. Done.
+
+---
+
+## Second update (web UI + JWT auth + welcome page)
+
+New/changed in this round:
+- `src/main/resources/static/index.html` — welcome page at `/`
+- `src/main/resources/static/app/` — the single-page admin UI (`index.html`, `app.js`)
+- `src/main/java/.../security/JwtService.java`, `JwtAuthFilter.java` — JWT auth (new)
+- `src/main/java/.../config/SecurityConfig.java` — JWT + per-role rules (changed)
+- `src/main/java/.../service/AuthService.java` — issues JWT on login (changed)
+- `src/main/java/.../controller/ChatController.java` + `service/ChatService.java` — list-channels endpoint (changed)
+- `pom.xml` — JJWT dependencies (changed)
+- `application.properties` — JWT secret/expiry (changed)
+
+Same update process as above: unzip over your local copy, then
+`git add . && git commit -m "Add web admin UI, JWT auth, welcome page" && git push`.

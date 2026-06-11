@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Workforce</title>
+<style>
+  :root{--bg:#0f1729;--panel:#16223c;--line:#26344f;--muted:#7e93b8;--accent:#3b82f6;--accent2:#6ea8fe;--ok:#34d399;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#dce6f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{max-width:680px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:40px;}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:#11314a;color:var(--ok);font-size:12px;padding:5px 12px;border-radius:20px;margin-bottom:20px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);}
+  h1{font-size:30px;font-weight:800;color:#fff;margin-bottom:6px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:26px;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px;}
+  a.btn{flex:1;min-width:180px;text-decoration:none;background:#0f1c33;border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:#dce6f5;transition:.15s;}
+  a.btn:hover{border-color:var(--accent2);background:#13233f;}
+  a.btn b{display:block;color:#fff;font-size:14px;margin-bottom:2px;}
+  a.btn span{font-size:12px;color:var(--muted);}
+  a.primary{background:var(--accent);border-color:var(--accent);}
+  a.primary b,a.primary span{color:#fff;}
+  .login{background:#0f1c33;border:1px solid var(--line);border-radius:10px;padding:16px;font-size:13px;color:var(--muted);}
+  .login code{background:#1e2d4a;color:var(--accent2);padding:2px 7px;border-radius:5px;font-size:12.5px;}
+  .foot{margin-top:24px;font-size:12px;color:#5f769c;text-align:center;}
+  .foot a{color:var(--accent2);text-decoration:none;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><span class="dot"></span> Application is running</div>
+    <h1>🤖 AI-Workforce</h1>
+    <div class="sub">Your configurable AI-staffed virtual company platform.</div>
+
+    <div class="row">
+      <a class="btn primary" href="/app/"><b>Open Admin Portal →</b><span>The web UI: staff, chat, company config</span></a>
+      <a class="btn" href="/api/staff"><b>REST API</b><span>GET /api/staff — view seeded staff (JSON)</span></a>
+    </div>
+    <div class="row">
+      <a class="btn" href="/h2-console" target="_blank"><b>Database Console</b><span>/h2-console · JDBC jdbc:h2:mem:aiworkforce</span></a>
+      <a class="btn" href="https://github.com/kayodekosi/ai-workforce" target="_blank"><b>Documentation</b><span>README, architecture &amp; walkthrough</span></a>
+    </div>
+
+    <div class="login">
+      <b style="color:#cdd9ee;">Default login:</b>
+      username <code>admin</code> &nbsp; password <code>admin</code>
+      &nbsp;— you'll be required to change it at first login.
+    </div>
+
+    <div class="foot">AI-Workforce · built by <a href="https://github.com/kayodekosi" target="_blank">Kayode Okosi</a></div>
+  </div>
+</body>
+</html>

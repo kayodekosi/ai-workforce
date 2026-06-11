@@ -44,6 +44,10 @@ public class ChatService {
         return messages.findByChannelIdOrderBySentAtAsc(channelId);
     }
 
+    public List<ChatChannel> listChannels() {
+        return channels.findAll();
+    }
+
     /**
      * Post a message from {@code senderId} into {@code channelId}, then have all
      * AI members reply. Returns the full list of messages produced (the original
