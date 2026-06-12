@@ -22,10 +22,12 @@ public class MeetingService {
 
     private final MeetingRepository meetings;
     private final StaffRepository staff;
+    private final EmailService email;
 
-    public MeetingService(MeetingRepository meetings, StaffRepository staff) {
+    public MeetingService(MeetingRepository meetings, StaffRepository staff, EmailService email) {
         this.meetings = meetings;
         this.staff = staff;
+        this.email = email;
     }
 
     public List<Meeting> all() { return meetings.findAllByOrderByStartTimeAsc(); }
@@ -55,7 +57,19 @@ public class MeetingService {
         if (req.attendeeIds() != null) {
             for (Long id : req.attendeeIds()) staff.findById(id).ifPresent(m.getAttendees()::add);
         }
-        return new ScheduleResult(true, meetings.save(m), List.of());
+        Meeting saved = meetings.save(m);
+
+        // send a meeting invite to each attendee with an email
+        for (Staff a : saved.getAttendees()) {
+            if (a.getEmail() == null || a.getEmail().isBlank()) continue;
+            String subject = "Meeting invite: " + (saved.getTitle() == null ? "(untitled)" : saved.getTitle());
+            String body = "Hi " + a.getFullName() + ",\n\nYou're invited to: "
+                    + saved.getTitle() + "\nWhen: " + saved.getStartTime()
+                    + (saved.getLocation() != null ? "\nWhere: " + saved.getLocation() : "")
+                    + "\n\nKnatware AI Company Ltd";
+            email.send(a.getEmail(), subject, body, "meeting-invite");
+        }
+        return new ScheduleResult(true, saved, List.of());
     }
 
     public void cancel(Long id) { meetings.deleteById(id); }

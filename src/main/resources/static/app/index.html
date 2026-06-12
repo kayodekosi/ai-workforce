@@ -125,6 +125,7 @@
     <button class="nav" data-view="hr" onclick="nav('hr')">🧑‍💼 HR &amp; Recruitment</button>
     <button class="nav" data-view="chat" onclick="nav('chat')">💬 Chat &amp; Conference</button>
     <button class="nav" data-view="calendar" onclick="nav('calendar')">📅 Calendar</button>
+    <button class="nav" data-view="email" onclick="nav('email')">✉️ Email</button>
     <button class="nav" data-view="connectors" onclick="nav('connectors')">🔌 Connectors</button>
     <button class="nav" data-view="settings" onclick="nav('settings')">⚙️ Settings</button>
     <div class="foot">signed in as <b id="whoami"></b><br><a href="#" onclick="logout();return false;" style="cursor:pointer;">Sign out</a></div>
@@ -203,6 +204,19 @@
       </table>
     </div>
 
+    <!-- EMAIL VIEW -->
+    <div id="view-email" class="hidden">
+      <div class="head">
+        <div><h1>Email <span id="mailMode" class="pill" style="vertical-align:middle;"></span></h1>
+        <div class="sub">Outbox — manual messages and auto-emails from candidate, interview &amp; meeting events</div></div>
+        <button class="btn" onclick="openComposeModal()">✉️ Compose</button>
+      </div>
+      <table>
+        <thead><tr><th>To</th><th>Subject</th><th>Trigger</th><th>Status</th><th>When</th></tr></thead>
+        <tbody id="emailRows"></tbody>
+      </table>
+    </div>
+
     <!-- CONNECTORS VIEW -->
     <div id="view-connectors" class="hidden">
       <div class="head"><div><h1>Connectors</h1><div class="sub">Which AI backend powers each AI staff member</div></div></div>
@@ -232,6 +246,38 @@
         Signed in as <b style="color:var(--ink)" id="setUser"></b> · role <b style="color:var(--ink)" id="setRole"></b><br>
         Auth: JWT (token expires after the configured window) · DB: in-memory H2<br>
         Need help? <a href="mailto:kayodeokosi@gmail.com">kayodeokosi@gmail.com</a> · <a href="mailto:kayode@knatware.com">kayode@knatware.com</a>
+      </div>
+
+      <div class="card" style="max-width:520px;">
+        <h3 style="color:#fff;font-size:15px;margin-bottom:4px;">✉️ Email / SMTP</h3>
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">
+          Configure your mail server. When disabled, emails are stored in the outbox as previews.
+          Use <b style="color:var(--ink)">Test connection</b> to verify before enabling.
+        </div>
+        <div id="smtpMsg"></div>
+        <div class="field" style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="smtpEnabled" style="width:auto;">
+          <label style="margin:0;text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;">Enable real sending via SMTP</label>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>SMTP host</label><input id="smtpHost" placeholder="smtp.gmail.com"></div>
+          <div class="field"><label>Port</label><input id="smtpPort" type="number" placeholder="587"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Username</label><input id="smtpUser" placeholder="you@example.com"></div>
+          <div class="field"><label>Password / app key</label><input id="smtpPass" type="password" placeholder="(leave blank to keep current)"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>From address</label><input id="smtpFrom" placeholder="no-reply@knatware.com"></div>
+          <div class="field" style="display:flex;gap:16px;align-items:flex-end;padding-bottom:9px;">
+            <label style="text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="smtpTls" style="width:auto;"> STARTTLS</label>
+            <label style="text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="smtpAuth" style="width:auto;"> Auth</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn" onclick="saveSmtp()">Save settings</button>
+          <button class="btn ghost" onclick="testSmtp()">🔌 Test connection</button>
+        </div>
       </div>
     </div>
   </div>
@@ -292,6 +338,33 @@
       <button class="btn ghost" onclick="closeModal('channelModal')">Cancel</button>
       <button class="btn" onclick="saveChannel()">Create</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== COMPOSE MODAL ===== -->
+<div id="composeModal" class="overlay hidden">
+  <div class="modal" style="width:520px;">
+    <h3>Compose Email</h3>
+    <div class="sub">Stored in the outbox; sent for real if SMTP is configured</div>
+    <div id="composeMsg"></div>
+    <div class="field"><label>To</label><input id="emTo" placeholder="someone@example.com"></div>
+    <div class="field"><label>Subject</label><input id="emSubject"></div>
+    <div class="field"><label>Message</label><textarea id="emBody" rows="5"></textarea></div>
+    <div class="actions">
+      <button class="btn ghost" onclick="closeModal('composeModal')">Cancel</button>
+      <button class="btn" onclick="sendEmail()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERVIEW MODAL ===== -->
+<div id="interviewModal" class="overlay hidden">
+  <div class="modal" style="width:640px;">
+    <h3>🎤 AI Interview</h3>
+    <div class="sub" id="ivSub">Generate questions, capture answers, and score via the AI backend (or simulation)</div>
+    <div id="ivMsg"></div>
+    <div id="ivBody"></div>
+    <div class="actions" id="ivActions"></div>
   </div>
 </div>
 

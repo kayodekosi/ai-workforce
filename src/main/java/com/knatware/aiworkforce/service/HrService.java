@@ -21,9 +21,11 @@ import java.util.List;
 public class HrService {
 
     private final CandidateRepository candidates;
+    private final EmailService email;
 
-    public HrService(CandidateRepository candidates) {
+    public HrService(CandidateRepository candidates, EmailService email) {
         this.candidates = candidates;
+        this.email = email;
     }
 
     public List<Candidate> all() { return candidates.findAllByOrderByAppliedAtDesc(); }
@@ -37,7 +39,35 @@ public class HrService {
     public Candidate updateStatus(Long id, CandidateStatus status) {
         Candidate c = candidates.findById(id).orElseThrow();
         c.setStatus(status);
-        return candidates.save(c);
+        Candidate saved = candidates.save(c);
+        notifyStatus(saved);
+        return saved;
+    }
+
+    /** Auto-email the candidate when they reach a notable stage. */
+    private void notifyStatus(Candidate c) {
+        if (c.getEmail() == null || c.getEmail().isBlank()) return;
+        String subject, body;
+        switch (c.getStatus()) {
+            case SHORTLISTED -> { subject = "You've been shortlisted";
+                body = "Hi " + c.getFullName() + ",\n\nGreat news — you've been shortlisted for "
+                     + safeRole(c) + ". We'll be in touch about next steps.\n\nKnatware AI Company Ltd"; }
+            case OFFER -> { subject = "An offer for you";
+                body = "Hi " + c.getFullName() + ",\n\nWe're delighted to extend an offer for "
+                     + safeRole(c) + ". Details to follow.\n\nKnatware AI Company Ltd"; }
+            case HIRED -> { subject = "Welcome to the team!";
+                body = "Hi " + c.getFullName() + ",\n\nWelcome aboard! We're excited to have you join us for "
+                     + safeRole(c) + ".\n\nKnatware AI Company Ltd"; }
+            case REJECTED -> { subject = "Update on your application";
+                body = "Hi " + c.getFullName() + ",\n\nThank you for your interest in " + safeRole(c)
+                     + ". On this occasion we won't be moving forward, but we wish you well.\n\nKnatware AI Company Ltd"; }
+            default -> { return; } // no email for early/neutral stages
+        }
+        email.send(c.getEmail(), subject, body, "candidate-status");
+    }
+
+    private String safeRole(Candidate c) {
+        return c.getRoleAppliedFor() == null ? "the role" : c.getRoleAppliedFor();
     }
 
     public Candidate grade(Long id, int grade, String notes) {

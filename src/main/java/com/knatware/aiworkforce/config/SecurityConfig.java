@@ -59,6 +59,7 @@ public class SecurityConfig {
                 // --- meetings & HR: any authenticated user ---
                 .requestMatchers("/api/meetings/**").authenticated()
                 .requestMatchers("/api/hr/**").authenticated()
+                .requestMatchers("/api/emails/**").authenticated()
                 // --- read + chat: any authenticated user ---
                 .anyRequest().authenticated()
             )

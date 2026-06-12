@@ -104,12 +104,13 @@ function appendLiveMessage(m){
 
 // ---------- NAV ----------
 function nav(view){
-  ['staff','company','organogram','hr','chat','calendar','connectors','settings'].forEach(v=>{
+  ['staff','company','organogram','hr','chat','calendar','email','connectors','settings'].forEach(v=>{
     el('view-'+v).classList.toggle('hidden', v!==view);
   });
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
   if(view==='chat') loadChannels();
   if(view==='calendar') loadMeetings();
+  if(view==='email') loadEmails();
   if(view==='connectors') loadConnectors();
   if(view==='settings') loadSettings();
   if(view==='organogram') renderOrganogram();
@@ -271,6 +272,41 @@ document.addEventListener('change', e=>{
   }
 });
 
+// ---------- EMAIL ----------
+const EMAIL_STATUS_COL = {PENDING:'#fbbf24',SENT:'#34d399',FAILED:'#ef4444'};
+async function loadEmails(){
+  const list = await api('/emails');
+  // infer mode from whether anything is SENT vs PENDING (display hint only)
+  const anySent = list.some(e=>e.status==='SENT');
+  el('mailMode').textContent = anySent ? 'SMTP ON' : 'OUTBOX (preview)';
+  el('mailMode').style.background = anySent ? '#11314a' : '#3a3320';
+  el('mailMode').style.color = anySent ? '#34d399' : '#fbbf24';
+  el('emailRows').innerHTML = list.length ? list.map(e=>{
+    const col = EMAIL_STATUS_COL[e.status]||'#64748b';
+    const when = e.createdAt ? new Date(e.createdAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<tr>
+      <td>${(e.toAddress||'—')}</td>
+      <td><b style="color:#fff">${(e.subject||'(no subject)').replace(/</g,'&lt;')}</b></td>
+      <td><span class="pill ai">${e.trigger||'manual'}</span></td>
+      <td><span class="pill" style="background:${col}22;color:${col}">${e.status}</span></td>
+      <td style="color:var(--muted2);font-size:12px;">${when}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="color:var(--muted2)">Outbox is empty. Compose one, or trigger events in HR/Calendar.</td></tr>`;
+}
+function openComposeModal(){
+  el('composeMsg').innerHTML='';
+  ['emTo','emSubject','emBody'].forEach(i=>el(i).value='');
+  el('composeModal').classList.remove('hidden');
+}
+async function sendEmail(){
+  const body={to:el('emTo').value,subject:el('emSubject').value,body:el('emBody').value};
+  if(!body.to){ el('composeMsg').innerHTML=`<div class="msg err">Recipient required.</div>`; return; }
+  try{
+    await api('/emails',{method:'POST',body:JSON.stringify(body)});
+    closeModal('composeModal'); loadEmails();
+  }catch(e){ el('composeMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+}
+
 // ---------- HR ----------
 const STATUS_COLORS = {APPLIED:'#64748b',SCREENING:'#6ea8fe',AI_INTERVIEW:'#a78bfa',
   SHORTLISTED:'#34d399',OFFER:'#fbbf24',HIRED:'#22c55e',REJECTED:'#ef4444'};
@@ -284,6 +320,7 @@ async function loadCandidates(){
       <td><span class="pill" style="background:${col}22;color:${col}">${c.status}</span></td>
       <td>${c.grade!=null?`<b style="color:${c.grade>=70?'#34d399':'#fbbf24'}">${c.grade}</b>/100`:'—'}</td>
       <td style="text-align:right;white-space:nowrap;">
+        <button class="btn ghost sm" onclick="openInterview(${c.id})">🎤 Interview</button>
         <button class="btn ghost sm" onclick="aiScreen(${c.id})">🤖 AI Screen</button>
         <select class="sm" style="width:auto;display:inline-block;padding:5px;" onchange="setCandStatus(${c.id},this.value)">
           ${Object.keys(STATUS_COLORS).map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}
@@ -313,6 +350,74 @@ async function setCandStatus(id,status){
 async function removeCandidate(id){
   try{ await api(`/hr/candidates/${id}`,{method:'DELETE'}); loadCandidates(); }
   catch(e){ alert('Failed: '+e.message); }
+}
+
+// ---------- AI INTERVIEW ----------
+let IV = null; // current interview
+async function openInterview(candidateId){
+  el('ivMsg').innerHTML=''; el('ivBody').innerHTML='Loading…';
+  el('interviewModal').classList.remove('hidden');
+  try{
+    IV = await api('/hr/interviews/latest/'+candidateId);
+  }catch(_){ IV = null; }
+  if(!IV){
+    el('ivBody').innerHTML = `<div style="color:var(--muted);font-size:13px;margin:14px 0;">
+      No interview yet for this candidate. Generate one to begin.</div>`;
+    el('ivActions').innerHTML = `<button class="btn ghost" onclick="closeModal('interviewModal')">Close</button>
+      <button class="btn" onclick="createInterview(${candidateId})">Generate Interview</button>`;
+  } else {
+    renderInterview();
+  }
+}
+async function createInterview(candidateId){
+  try{
+    IV = await api('/hr/interviews/create',{method:'POST',body:JSON.stringify({candidateId})});
+    renderInterview();
+  }catch(e){ el('ivMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+}
+function renderInterview(){
+  if(!IV || !Array.isArray(IV.questions)){
+    el('ivBody').innerHTML = `<div class="msg err">Interview data didn't load correctly. Try regenerating.</div>`;
+    el('ivActions').innerHTML = `<button class="btn ghost" onclick="closeModal('interviewModal')">Close</button>`;
+    return;
+  }
+  const scored = IV.status==='SCORED';
+  el('ivSub').textContent = scored
+    ? `Scored via ${IV.connectorUsed||'simulation'} — overall ${IV.overallScore}/100`
+    : 'Answer the questions, then score the interview';
+  el('ivBody').innerHTML = `
+    ${scored && IV.summary ? `<div class="msg ok">${IV.summary}</div>`:''}
+    ${IV.questions.map((q,i)=>`
+      <div class="card" style="margin-bottom:12px;">
+        <div style="color:#fff;font-size:13.5px;margin-bottom:8px;">Q${i+1}. ${q.question}</div>
+        ${scored
+          ? `<div style="font-size:13px;color:var(--ink);background:#0f1c33;border-radius:7px;padding:9px 11px;margin-bottom:8px;">${(q.answer||'(no answer)').replace(/</g,'&lt;')}</div>
+             <div style="font-size:12.5px;color:var(--muted);">Score: <b style="color:${q.score>=70?'#34d399':'#fbbf24'}">${q.score}</b>/100 — ${q.feedback||''}</div>`
+          : `<textarea id="ivA${i}" rows="2" placeholder="Candidate's answer…">${q.answer||''}</textarea>`}
+      </div>`).join('')}`;
+  if(scored){
+    el('ivActions').innerHTML = `<button class="btn ghost" onclick="closeModal('interviewModal');loadCandidates();">Close</button>`;
+  } else {
+    el('ivActions').innerHTML = `<button class="btn ghost" onclick="closeModal('interviewModal')">Cancel</button>
+      <button class="btn ghost" onclick="saveAnswers()">Save Answers</button>
+      <button class="btn" onclick="scoreInterview()">🤖 Score Interview</button>`;
+  }
+}
+function collectAnswers(){
+  return IV.questions.map((q,i)=>{ const t=el('ivA'+i); return t?t.value:''; });
+}
+async function saveAnswers(){
+  try{
+    IV = await api(`/hr/interviews/${IV.id}/answers`,{method:'POST',body:JSON.stringify({answers:collectAnswers()})});
+    el('ivMsg').innerHTML = `<div class="msg ok">Answers saved.</div>`;
+  }catch(e){ el('ivMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+}
+async function scoreInterview(){
+  try{
+    await api(`/hr/interviews/${IV.id}/answers`,{method:'POST',body:JSON.stringify({answers:collectAnswers()})});
+    IV = await api(`/hr/interviews/${IV.id}/score`,{method:'POST'});
+    renderInterview();
+  }catch(e){ el('ivMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
 }
 
 // ---------- ORGANOGRAM ----------
@@ -416,6 +521,45 @@ function loadSettings(){
   el('setUser').textContent = USER;
   el('setRole').textContent = ROLE;
   el('settingsMsg').innerHTML = '';
+  el('smtpMsg').innerHTML = '';
+  loadSmtp();
+}
+async function loadSmtp(){
+  try{
+    const s = await api('/emails/settings');
+    el('smtpEnabled').checked = !!s.enabled;
+    el('smtpHost').value = s.host||'';
+    el('smtpPort').value = s.port||587;
+    el('smtpUser').value = s.username||'';
+    el('smtpPass').value = '';
+    el('smtpFrom').value = s.fromAddress||'';
+    el('smtpTls').checked = s.startTls!==false;
+    el('smtpAuth').checked = s.auth!==false;
+  }catch(e){ el('smtpMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+}
+async function saveSmtp(){
+  const body={
+    enabled:el('smtpEnabled').checked, host:el('smtpHost').value,
+    port:parseInt(el('smtpPort').value)||587, username:el('smtpUser').value,
+    password:el('smtpPass').value, fromAddress:el('smtpFrom').value,
+    startTls:el('smtpTls').checked, auth:el('smtpAuth').checked
+  };
+  try{
+    await api('/emails/settings',{method:'PUT',body:JSON.stringify(body)});
+    el('smtpMsg').innerHTML=`<div class="msg ok">Settings saved.</div>`;
+    el('smtpPass').value='';
+  }catch(e){ el('smtpMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+}
+async function testSmtp(){
+  el('smtpMsg').innerHTML=`<div class="msg" style="background:#11203b;color:var(--muted2)">Testing connection…</div>`;
+  // save first so the test uses the latest values
+  await saveSmtp().catch(()=>{});
+  try{
+    const r = await api('/emails/settings/test',{method:'POST'});
+    el('smtpMsg').innerHTML = r.ok
+      ? `<div class="msg ok">✓ ${r.message}</div>`
+      : `<div class="msg err">✕ ${r.message}</div>`;
+  }catch(e){ el('smtpMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
 }
 async function changeOwnPassword(){
   const msg = el('settingsMsg');

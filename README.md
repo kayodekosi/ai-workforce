@@ -204,8 +204,8 @@ This is a working platform with a clean, extensible architecture:
 - ✅ **Voice synthesis** (flexible multi-provider TTS: simulated mode + any HTTP provider — ElevenLabs, Azure, Google, Polly, OpenAI, self-hosted)
 - ✅ **Calendar / meeting scheduling** (with conflict detection on human attendees)
 - ✅ **Organogram** (live org chart from reporting lines)
-- ✅ **HR & Recruitment starter** (candidate pipeline, statuses, grading, simulated AI screening)
-- 🔜 Email integration
+- ✅ **HR & Recruitment** (candidate pipeline + **AI interview engine**: role-aware questions, answers, and scoring via the connector layer with simulation fallback)
+- ✅ **Email integration** (outbox-first; **SMTP configured & connection-tested from the portal Settings screen**; auto-emails on candidate status, interview results & meeting invites)
 
 Contributions welcome.
 
