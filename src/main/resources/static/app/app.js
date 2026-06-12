@@ -181,10 +181,12 @@ async function loadStaff(){
       <td><span class="pill ${s.type==='AI'?'ai':'human'}">${s.type}</span></td>
       <td>${s.phoneExtension||'—'}</td>
       <td><span class="status"><span class="dot" style="background:${st[0]}"></span>${st[1]}</span></td>
-      <td style="text-align:right;">
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn ghost sm" onclick="editStaff(${s.id})">✎ Edit</button>
         ${s.status==='ON_LEAVE'
           ? `<button class="btn ghost sm" onclick="staffAction(${s.id},'activate')">Reactivate</button>`
           : `<button class="btn ghost sm" onclick="staffAction(${s.id},'leave')">Leave</button>`}
+        <button class="btn ghost sm" onclick="removeStaff(${s.id},'${(s.fullName||'').replace(/'/g,"")}')">✕ Remove</button>
       </td></tr>`;
   }).join('');
 }
@@ -194,11 +196,57 @@ async function staffAction(id, action){
   loadStaff();
 }
 
+async function removeStaff(id, name){
+  if(!confirm('Remove '+(name||'this staff member')+' permanently? This cannot be undone.')) return;
+  try{
+    await api(`/staff/${id}`, {method:'DELETE'});
+    loadStaff();
+  }catch(e){ alert('Remove failed: '+e.message+(ROLE!=='ADMIN'?' (ADMIN only)':'')); }
+}
+
+let EDITING_STAFF_ID = null;
+
+function fillReportsTo(excludeId){
+  el('sReportsTo').innerHTML = '<option value="">— none (top of chain) —</option>'
+    + STAFF.filter(s=>s.id!==excludeId).map(s=>`<option value="${s.id}">${s.fullName||''}${s.position?' · '+s.position:''}</option>`).join('');
+}
+
 function openStaffModal(){
+  EDITING_STAFF_ID = null;
+  document.querySelector('#staffModal .modal h3').textContent = 'Onboard / Configure Staff';
   el('sDept').innerHTML = '<option value="">—</option>' + DEPTS.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  fillReportsTo(null);
   ['sName','sEmail','sPosition','sFunction','sExt','sDuties','sPrompt','sModel','sEndpoint'].forEach(i=>el(i).value='');
+  el('sType').value='AI'; el('sConnector').value='NONE'; el('sVoice').value='false'; el('sReportsTo').value='';
+  el('aiFields').style.display='block';
   el('staffModal').classList.remove('hidden');
 }
+
+function editStaff(id){
+  const s = STAFF.find(x=>x.id===id);
+  if(!s) return;
+  EDITING_STAFF_ID = id;
+  document.querySelector('#staffModal .modal h3').textContent = 'Edit Staff — ' + (s.fullName||'');
+  el('sDept').innerHTML = '<option value="">—</option>' + DEPTS.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  el('sName').value = s.fullName||'';
+  el('sEmail').value = s.email||'';
+  el('sPosition').value = s.position||'';
+  el('sFunction').value = s.function||'';
+  el('sExt').value = s.phoneExtension||'';
+  el('sDuties').value = s.duties||'';
+  el('sType').value = s.type||'AI';
+  el('sDept').value = (s.department && s.department.id) ? s.department.id : '';
+  el('sPrompt').value = s.systemPrompt||'';
+  el('sModel').value = s.model||'';
+  el('sConnector').value = s.connector||'NONE';
+  el('sEndpoint').value = s.connectorEndpoint||'';
+  el('sVoice').value = s.voiceEnabled ? 'true' : 'false';
+  fillReportsTo(id);
+  el('sReportsTo').value = (s.reportsTo && s.reportsTo.id) ? s.reportsTo.id : '';
+  el('aiFields').style.display = (s.type==='AI') ? 'block' : 'none';
+  el('staffModal').classList.remove('hidden');
+}
+
 function closeModal(id){ el(id).classList.add('hidden'); }
 
 async function saveStaff(){
@@ -211,10 +259,34 @@ async function saveStaff(){
   };
   const deptId = el('sDept').value;
   if(deptId) body.department = DEPTS.find(d=>d.id==deptId);
+  // reporting line from the dropdown (explicit choice wins)
+  const rtId = el('sReportsTo').value;
+  if(rtId){
+    const mgr = STAFF.find(x=>x.id==rtId);
+    if(mgr) body.reportsTo = {id: mgr.id};
+  } else {
+    body.reportsTo = null;
+  }
+  // preserve fields not shown in the form when editing
+  if(EDITING_STAFF_ID){
+    const existing = STAFF.find(x=>x.id===EDITING_STAFF_ID);
+    if(existing){
+      if(existing.status) body.status = existing.status;
+      if(existing.level) body.level = existing.level;
+      if(existing.photoUrl) body.photoUrl = existing.photoUrl;
+      if(existing.voiceId) body.voiceId = existing.voiceId;
+      if(existing.voiceProvider) body.voiceProvider = existing.voiceProvider;
+      if(typeof existing.alwaysOnline==='boolean') body.alwaysOnline = existing.alwaysOnline;
+    }
+  }
   try{
-    await api('/staff', {method:'POST', body:JSON.stringify(body)});
-    closeModal('staffModal'); loadStaff();
-  }catch(e){ alert('Save failed: ' + e.message + (ROLE!=='ADMIN' ? ' (only ADMIN can add staff)' : '')); }
+    if(EDITING_STAFF_ID){
+      await api('/staff/'+EDITING_STAFF_ID, {method:'PUT', body:JSON.stringify(body)});
+    } else {
+      await api('/staff', {method:'POST', body:JSON.stringify(body)});
+    }
+    closeModal('staffModal'); EDITING_STAFF_ID=null; loadStaff();
+  }catch(e){ alert('Save failed: ' + e.message + (ROLE!=='ADMIN' ? ' (only ADMIN can add/edit staff)' : '')); }
 }
 
 // ---------- COMPANY ----------
@@ -234,9 +306,9 @@ async function loadCompany(){
     <button class="btn" onclick="saveCompany(${c.id||0})">Save company</button>`;
   DEPTS = await api('/company/departments');
   LEVELS = await api('/company/levels');
-  el('deptList').innerHTML = DEPTS.map(d=>`<div style="padding:7px 0;border-top:1px solid var(--line);">${d.name}</div>`).join('')
+  el('deptList').innerHTML = DEPTS.map(d=>`<div style="padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">${d.name}<button class="btn ghost sm" onclick="deleteDept(${d.id},'${(d.name||'').replace(/'/g,"")}')">✕</button></div>`).join('')
     + `<div style="margin-top:10px;display:flex;gap:8px;"><input id="newDept" placeholder="New department"><button class="btn sm" onclick="addDept()">Add</button></div>`;
-  el('levelList').innerHTML = LEVELS.sort((a,b)=>a.rank-b.rank).map(l=>`<div style="padding:7px 0;border-top:1px solid var(--line);">${l.name} <small style="color:var(--muted2)">rank ${l.rank}</small></div>`).join('')
+  el('levelList').innerHTML = LEVELS.sort((a,b)=>a.rank-b.rank).map(l=>`<div style="padding:7px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;"><span>${l.name} <small style="color:var(--muted2)">rank ${l.rank}</small></span><button class="btn ghost sm" onclick="deleteLevel(${l.id},'${(l.name||'').replace(/'/g,"")}')">✕</button></div>`).join('')
     + `<div style="margin-top:10px;display:flex;gap:8px;"><input id="newLevel" placeholder="New level"><input id="newRank" type="number" placeholder="rank" style="width:80px;"><button class="btn sm" onclick="addLevel()">Add</button></div>`;
 }
 async function saveCompany(id){
@@ -248,9 +320,25 @@ async function addDept(){
   try{ await api('/company/departments',{method:'POST',body:JSON.stringify({name:el('newDept').value})}); loadCompany(); }
   catch(e){ alert('Failed: '+e.message); }
 }
+async function deleteDept(id, name){
+  if(!confirm('Delete department "'+(name||'')+'"? Staff in it will be unassigned.')) return;
+  try{
+    const r = await api('/company/departments/'+id,{method:'DELETE'});
+    loadCompany();
+    if(r && r.staffUnassigned>0) loadStaff();
+  }catch(e){ alert('Failed: '+e.message+(ROLE!=='ADMIN'?' (ADMIN only)':'')); }
+}
 async function addLevel(){
   try{ await api('/company/levels',{method:'POST',body:JSON.stringify({name:el('newLevel').value,rank:parseInt(el('newRank').value)||1})}); loadCompany(); }
   catch(e){ alert('Failed: '+e.message); }
+}
+async function deleteLevel(id, name){
+  if(!confirm('Delete level "'+(name||'')+'"? Staff on it will be unassigned.')) return;
+  try{
+    const r = await api('/company/levels/'+id,{method:'DELETE'});
+    loadCompany();
+    if(r && r.staffUnassigned>0) loadStaff();
+  }catch(e){ alert('Failed: '+e.message+(ROLE!=='ADMIN'?' (ADMIN only)':'')); }
 }
 
 // ---------- CHAT ----------

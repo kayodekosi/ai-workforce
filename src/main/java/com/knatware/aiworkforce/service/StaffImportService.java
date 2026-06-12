@@ -28,17 +28,21 @@ public class StaffImportService {
 
     private final StaffRepository staff;
     private final DepartmentRepository departments;
+    private final com.knatware.aiworkforce.repository.LevelRepository levels;
     private final AuditService audit;
 
-    public StaffImportService(StaffRepository staff, DepartmentRepository departments, AuditService audit) {
+    public StaffImportService(StaffRepository staff, DepartmentRepository departments,
+                              com.knatware.aiworkforce.repository.LevelRepository levels,
+                              AuditService audit) {
         this.staff = staff;
         this.departments = departments;
+        this.levels = levels;
         this.audit = audit;
     }
 
     private static final String[] HEADERS = {
         "Full Name", "Email", "Type (AI/HUMAN)", "Position", "Function",
-        "Department", "Phone Ext", "Reports To (email)", "System Prompt", "Model", "Connector"
+        "Department", "Level", "Phone Ext", "Reports To (email)", "System Prompt", "Model", "Connector"
     };
 
     public record ImportResult(int created, List<String> errors) { }
@@ -72,16 +76,30 @@ public class StaffImportService {
                                 .orElseGet(() -> departments.save(new Department(deptName.trim())));
                         s.setDepartment(d);
                     }
-                    s.setPhoneExtension(cell(row, 6));
-                    String reportsToEmail = cell(row, 7);
+                    String levelName = cell(row, 6);
+                    if (levelName != null && !levelName.isBlank()) {
+                        final String ln = levelName.trim();
+                        Level lvl = levels.findAll().stream()
+                                .filter(x -> x.getName().equalsIgnoreCase(ln))
+                                .findFirst()
+                                .orElseGet(() -> {
+                                    // assign next rank so new levels are ordered by appearance
+                                    int nextRank = levels.findAll().stream()
+                                            .mapToInt(Level::getRank).max().orElse(0) + 1;
+                                    return levels.save(new Level(ln, nextRank));
+                                });
+                        s.setLevel(lvl);
+                    }
+                    s.setPhoneExtension(cell(row, 7));
+                    String reportsToEmail = cell(row, 8);
                     if (reportsToEmail != null && !reportsToEmail.isBlank()) {
                         staff.findAll().stream()
                                 .filter(x -> reportsToEmail.equalsIgnoreCase(x.getEmail()))
                                 .findFirst().ifPresent(s::setReportsTo);
                     }
-                    s.setSystemPrompt(cell(row, 8));
-                    s.setModel(cell(row, 9));
-                    String connector = cell(row, 10);
+                    s.setSystemPrompt(cell(row, 9));
+                    s.setModel(cell(row, 10));
+                    String connector = cell(row, 11);
                     if (connector != null && !connector.isBlank()) {
                         try { s.setConnector(ConnectorType.valueOf(connector.trim().toUpperCase())); }
                         catch (Exception ex) { s.setConnector(ConnectorType.NONE); }
@@ -116,9 +134,9 @@ public class StaffImportService {
 
             String[][] examples = {
                 {"Ada Support", "ada@knatware.com", "AI", "Support Lead", "Support",
-                 "Customer Support", "1001", "", "You are Ada, a calm support lead.", "gpt-4o", "NONE"},
+                 "Customer Support", "Team Lead", "1001", "", "You are Ada, a calm support lead.", "gpt-4o", "NONE"},
                 {"Jordan Lee", "jordan@knatware.com", "HUMAN", "Operations Manager", "Human Operator",
-                 "Sales", "2001", "", "", "", "NONE"}
+                 "Sales", "Manager", "2001", "", "", "", "NONE"}
             };
             for (int r = 0; r < examples.length; r++) {
                 Row row = sheet.createRow(r + 1);

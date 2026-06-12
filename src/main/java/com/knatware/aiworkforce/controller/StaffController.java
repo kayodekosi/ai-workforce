@@ -31,6 +31,7 @@ public class StaffController {
     @PostMapping
     public Staff onboard(@RequestBody Staff body) {
         body.setId(null);
+        resolveRefs(body);
         return staff.save(body);
     }
 
@@ -39,8 +40,25 @@ public class StaffController {
     public ResponseEntity<Staff> update(@PathVariable Long id, @RequestBody Staff body) {
         return staff.findById(id).map(existing -> {
             body.setId(id);
+            resolveRefs(body);
             return ResponseEntity.ok(staff.save(body));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Replace detached association stubs (carrying only an id from the client)
+     * with managed entities, so JPA persists the relationships correctly.
+     * Guards against self-reporting.
+     */
+    private void resolveRefs(Staff body) {
+        if (body.getReportsTo() != null && body.getReportsTo().getId() != null) {
+            Long mgrId = body.getReportsTo().getId();
+            if (mgrId.equals(body.getId())) {
+                body.setReportsTo(null); // can't report to self
+            } else {
+                body.setReportsTo(staff.findById(mgrId).orElse(null));
+            }
+        }
     }
 
     @PostMapping("/{id}/leave")
@@ -56,6 +74,21 @@ public class StaffController {
     @PostMapping("/{id}/offboard")
     public ResponseEntity<Staff> offboard(@PathVariable Long id) {
         return setStatus(id, StaffStatus.OFFBOARDED);
+    }
+
+    /** Permanently remove a staff member. */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> remove(@PathVariable Long id) {
+        if (!staff.existsById(id)) return ResponseEntity.notFound().build();
+        // clear any reporting lines pointing at this staff to avoid orphan references
+        staff.findAll().forEach(other -> {
+            if (other.getReportsTo() != null && id.equals(other.getReportsTo().getId())) {
+                other.setReportsTo(null);
+                staff.save(other);
+            }
+        });
+        staff.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     private ResponseEntity<Staff> setStatus(Long id, StaffStatus status) {
