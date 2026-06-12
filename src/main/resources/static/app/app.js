@@ -104,7 +104,7 @@ function appendLiveMessage(m){
 
 // ---------- NAV ----------
 function nav(view){
-  ['staff','company','chat','calendar','connectors','settings'].forEach(v=>{
+  ['staff','company','organogram','hr','chat','calendar','connectors','settings'].forEach(v=>{
     el('view-'+v).classList.toggle('hidden', v!==view);
   });
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
@@ -112,6 +112,8 @@ function nav(view){
   if(view==='calendar') loadMeetings();
   if(view==='connectors') loadConnectors();
   if(view==='settings') loadSettings();
+  if(view==='organogram') renderOrganogram();
+  if(view==='hr') loadCandidates();
 }
 
 async function loadAll(){ await Promise.all([loadStaff(), loadCompany()]); }
@@ -269,6 +271,77 @@ document.addEventListener('change', e=>{
   }
 });
 
+// ---------- HR ----------
+const STATUS_COLORS = {APPLIED:'#64748b',SCREENING:'#6ea8fe',AI_INTERVIEW:'#a78bfa',
+  SHORTLISTED:'#34d399',OFFER:'#fbbf24',HIRED:'#22c55e',REJECTED:'#ef4444'};
+async function loadCandidates(){
+  const list = await api('/hr/candidates');
+  el('candidateRows').innerHTML = list.length ? list.map(c=>{
+    const col = STATUS_COLORS[c.status]||'#64748b';
+    return `<tr>
+      <td><b style="color:#fff">${(c.fullName||'').replace(/</g,'&lt;')}</b><br><small style="color:var(--muted2)">${c.email||''}</small></td>
+      <td>${c.roleAppliedFor||'—'}</td>
+      <td><span class="pill" style="background:${col}22;color:${col}">${c.status}</span></td>
+      <td>${c.grade!=null?`<b style="color:${c.grade>=70?'#34d399':'#fbbf24'}">${c.grade}</b>/100`:'—'}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn ghost sm" onclick="aiScreen(${c.id})">🤖 AI Screen</button>
+        <select class="sm" style="width:auto;display:inline-block;padding:5px;" onchange="setCandStatus(${c.id},this.value)">
+          ${Object.keys(STATUS_COLORS).map(s=>`<option ${s===c.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <button class="btn ghost sm" onclick="removeCandidate(${c.id})">✕</button>
+      </td></tr>`;
+  }).join('') : `<tr><td colspan="5" style="color:var(--muted2)">No candidates yet. Add one to start the pipeline.</td></tr>`;
+}
+function openCandidateModal(){
+  ['cdName','cdEmail','cdRole'].forEach(i=>el(i).value='');
+  el('candidateModal').classList.remove('hidden');
+}
+async function saveCandidate(){
+  const body={fullName:el('cdName').value,email:el('cdEmail').value,roleAppliedFor:el('cdRole').value};
+  if(!body.fullName){ alert('Name required'); return; }
+  try{ await api('/hr/candidates',{method:'POST',body:JSON.stringify(body)}); closeModal('candidateModal'); loadCandidates(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+async function aiScreen(id){
+  try{ await api(`/hr/candidates/${id}/ai-screen`,{method:'POST'}); loadCandidates(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+async function setCandStatus(id,status){
+  try{ await api(`/hr/candidates/${id}/status`,{method:'POST',body:JSON.stringify({status})}); loadCandidates(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+async function removeCandidate(id){
+  try{ await api(`/hr/candidates/${id}`,{method:'DELETE'}); loadCandidates(); }
+  catch(e){ alert('Failed: '+e.message); }
+}
+
+// ---------- ORGANOGRAM ----------
+function renderOrganogram(){
+  // build a tree from STAFF using reportsTo
+  const byId = {}; STAFF.forEach(s=>byId[s.id]={...s, children:[]});
+  const roots = [];
+  STAFF.forEach(s=>{
+    const node = byId[s.id];
+    const parentId = s.reportsTo && s.reportsTo.id;
+    if(parentId && byId[parentId]) byId[parentId].children.push(node);
+    else roots.push(node);
+  });
+  const card = (n)=>{
+    const ai = n.type==='AI';
+    return `<div class="org-node">
+      <div class="org-card">
+        <span class="avatar" style="background:${colorFor(n.id)};width:26px;height:26px;font-size:11px;">${initials(n.fullName)}</span>
+        <div><div style="color:#fff;font-size:13px;font-weight:600;">${n.fullName||''}</div>
+        <div style="color:var(--muted2);font-size:11px;">${n.position||''} ${ai?'· <span style="color:var(--accent2)">AI</span>':'· <span style="color:var(--warn)">Human</span>'}</div></div>
+      </div>
+      ${n.children.length ? `<div class="org-children">${n.children.map(card).join('')}</div>` : ''}
+    </div>`;
+  };
+  el('orgTree').innerHTML = roots.length
+    ? `<div class="org-root">${roots.map(card).join('')}</div>`
+    : `<div style="color:var(--muted2)">No staff yet.</div>`;
+}
+
 // ---------- CALENDAR ----------
 const fmtWhen = (s,e)=>{
   if(!s) return '—';
@@ -313,13 +386,12 @@ async function saveMeeting(){
     msg.innerHTML = `<div class="msg err">Title, start and end are required.</div>`; return;
   }
   try{
-    const res = await fetch('/api/meetings', {method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},
-      body:JSON.stringify(body)});
-    if(res.status===409){ const j=await res.json(); msg.innerHTML=`<div class="msg err">${j.message}</div>`; return; }
-    if(!res.ok){ msg.innerHTML=`<div class="msg err">Failed (HTTP ${res.status})</div>`; return; }
+    await api('/meetings', {method:'POST', body:JSON.stringify(body)});
     closeModal('meetingModal'); loadMeetings();
-  }catch(e){ msg.innerHTML = `<div class="msg err">${e.message}</div>`; }
+  }catch(e){
+    // api() throws on non-2xx; surface conflict messages clearly
+    msg.innerHTML = `<div class="msg err">${e.message}</div>`;
+  }
 }
 async function cancelMeeting(id){
   await api('/meetings/'+id, {method:'DELETE'});

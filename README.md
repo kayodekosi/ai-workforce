@@ -201,8 +201,10 @@ This is a working platform with a clean, extensible architecture:
 - ✅ **JWT authentication + per-role authorization** (ADMIN vs OPERATOR; admin-only config writes)
 - ✅ **Welcome page** at `/` and Docker/Compose deployment
 - ✅ **Real-time chat via WebSockets** (STOMP/SockJS; messages and AI replies stream live)
-- 🔜 Live voice synthesis wiring (connector hooks are in place; provider calls stubbed)
+- ✅ **Voice synthesis** (flexible multi-provider TTS: simulated mode + any HTTP provider — ElevenLabs, Azure, Google, Polly, OpenAI, self-hosted)
 - ✅ **Calendar / meeting scheduling** (with conflict detection on human attendees)
+- ✅ **Organogram** (live org chart from reporting lines)
+- ✅ **HR & Recruitment starter** (candidate pipeline, statuses, grading, simulated AI screening)
 - 🔜 Email integration
 
 Contributions welcome.

@@ -80,6 +80,16 @@
   .bubble .txt{font-size:13.5px;}
   .bubble.me{background:#1e3a5f;margin-left:auto;}
   .composer{display:flex;gap:10px;margin-top:14px;}
+
+  /* organogram */
+  .org-root{display:flex;justify-content:center;padding:20px 0;}
+  .org-node{display:flex;flex-direction:column;align-items:center;}
+  .org-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+            padding:10px 14px;display:flex;align-items:center;gap:10px;min-width:170px;margin:0 8px;}
+  .org-children{display:flex;gap:12px;margin-top:18px;position:relative;padding-top:18px;}
+  .org-children:before{content:"";position:absolute;top:0;left:50%;width:1px;height:18px;background:var(--line);}
+  .org-node .org-children > .org-node{position:relative;}
+  .org-node .org-children > .org-node:before{content:"";position:absolute;top:-18px;left:50%;width:1px;height:18px;background:var(--line);}
 </style>
 </head>
 <body>
@@ -111,6 +121,8 @@
     <div class="role" id="sideRole">ADMIN PORTAL</div>
     <button class="nav active" data-view="staff" onclick="nav('staff')">👥 Staff</button>
     <button class="nav" data-view="company" onclick="nav('company')">🏢 Company</button>
+    <button class="nav" data-view="organogram" onclick="nav('organogram')">🌳 Organogram</button>
+    <button class="nav" data-view="hr" onclick="nav('hr')">🧑‍💼 HR &amp; Recruitment</button>
     <button class="nav" data-view="chat" onclick="nav('chat')">💬 Chat &amp; Conference</button>
     <button class="nav" data-view="calendar" onclick="nav('calendar')">📅 Calendar</button>
     <button class="nav" data-view="connectors" onclick="nav('connectors')">🔌 Connectors</button>
@@ -139,6 +151,25 @@
         <div class="card"><h3 style="color:#fff;font-size:15px;margin-bottom:12px;">Departments</h3><div id="deptList"></div></div>
         <div class="card"><h3 style="color:#fff;font-size:15px;margin-bottom:12px;">Levels</h3><div id="levelList"></div></div>
       </div>
+    </div>
+
+    <!-- ORGANOGRAM VIEW -->
+    <div id="view-organogram" class="hidden">
+      <div class="head"><div><h1>Organogram</h1><div class="sub">Reporting structure — updates as staff are added and their reporting lines set</div></div></div>
+      <div id="orgTree" style="overflow:auto;"></div>
+    </div>
+
+    <!-- HR VIEW -->
+    <div id="view-hr" class="hidden">
+      <div class="head">
+        <div><h1>HR &amp; Recruitment <span class="pill ai" style="vertical-align:middle;">SPECIAL DEPT</span></h1>
+        <div class="sub">Recruitment pipeline — add candidates, run automated AI screening, grade, and advance</div></div>
+        <button class="btn" onclick="openCandidateModal()">+ Add Candidate</button>
+      </div>
+      <table>
+        <thead><tr><th>Candidate</th><th>Role</th><th>Status</th><th>Grade</th><th>Actions</th></tr></thead>
+        <tbody id="candidateRows"></tbody>
+      </table>
     </div>
 
     <!-- CHAT VIEW -->
@@ -260,6 +291,21 @@
     <div class="actions">
       <button class="btn ghost" onclick="closeModal('channelModal')">Cancel</button>
       <button class="btn" onclick="saveChannel()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CANDIDATE MODAL ===== -->
+<div id="candidateModal" class="overlay hidden">
+  <div class="modal" style="width:460px;">
+    <h3>Add Candidate</h3>
+    <div class="sub">Add an applicant to the recruitment pipeline</div>
+    <div class="field"><label>Full name</label><input id="cdName"></div>
+    <div class="field"><label>Email</label><input id="cdEmail"></div>
+    <div class="field"><label>Role applied for</label><input id="cdRole"></div>
+    <div class="actions">
+      <button class="btn ghost" onclick="closeModal('candidateModal')">Cancel</button>
+      <button class="btn" onclick="saveCandidate()">Add</button>
     </div>
   </div>
 </div>

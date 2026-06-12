@@ -56,6 +56,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,    "/api/staff/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT,    "/api/company/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST,   "/api/company/**").hasRole("ADMIN")
+                // --- meetings & HR: any authenticated user ---
+                .requestMatchers("/api/meetings/**").authenticated()
+                .requestMatchers("/api/hr/**").authenticated()
                 // --- read + chat: any authenticated user ---
                 .anyRequest().authenticated()
             )

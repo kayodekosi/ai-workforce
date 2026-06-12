@@ -54,6 +54,9 @@ public class DataSeeder implements CommandLineRunner {
         // --- departments & levels ---
         Department support = departments.save(new Department("Customer Support"));
         Department sales = departments.save(new Department("Sales"));
+        Department hr = departments.save(new Department("Human Resources"));
+        hr.setDescription("Special department: recruitment, AI interviewing, screening & grading.");
+        departments.save(hr);
         Level associate = levels.save(new Level("Associate", 1));
         Level lead = levels.save(new Level("Team Lead", 3));
 

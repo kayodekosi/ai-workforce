@@ -29,15 +29,18 @@ public class ChatService {
     private final StaffRepository staff;
     private final AiConnectorRegistry connectors;
     private final SimpMessagingTemplate broker;
+    private final com.knatware.aiworkforce.voice.VoiceService voice;
 
     public ChatService(ChatChannelRepository channels, ChatMessageRepository messages,
                        StaffRepository staff, AiConnectorRegistry connectors,
-                       SimpMessagingTemplate broker) {
+                       SimpMessagingTemplate broker,
+                       com.knatware.aiworkforce.voice.VoiceService voice) {
         this.channels = channels;
         this.messages = messages;
         this.staff = staff;
         this.connectors = connectors;
         this.broker = broker;
+        this.voice = voice;
     }
 
     public ChatChannel createChannel(String name, ChatChannel.ChannelType type, List<Long> memberIds) {
@@ -91,7 +94,10 @@ public class ChatService {
             aiMsg.setChannel(channel);
             aiMsg.setSender(member);
             aiMsg.setContent(reply.text());
-            if (member.isVoiceEnabled()) aiMsg.setVoiceClipUrl(reply.voiceClipUrl());
+            if (member.isVoiceEnabled()) {
+                var clip = voice.speak(member, reply.text());
+                if (clip != null) aiMsg.setVoiceClipUrl(clip.url());
+            }
             ChatMessage savedAi = messages.save(aiMsg);
             produced.add(savedAi);
             broadcast(channelId, savedAi);
