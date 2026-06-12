@@ -17,11 +17,13 @@ public class AuthService {
     private final AdminUserRepository users;
     private final PasswordEncoder encoder;
     private final JwtService jwt;
+    private final AuditService audit;
 
-    public AuthService(AdminUserRepository users, PasswordEncoder encoder, JwtService jwt) {
+    public AuthService(AdminUserRepository users, PasswordEncoder encoder, JwtService jwt, AuditService audit) {
         this.users = users;
         this.encoder = encoder;
         this.jwt = jwt;
+        this.audit = audit;
     }
 
     /** token is null when login fails or a password change is required first. */
@@ -39,6 +41,7 @@ public class AuthService {
                     "Login OK — you must change your password before continuing.");
         }
         String token = jwt.issue(u.getUsername(), u.getRole());
+        audit.log(u.getUsername(), "LOGIN", "Successful login");
         return new LoginResult(true, false, token, u.getRole(), "Login OK.");
     }
 
@@ -61,5 +64,22 @@ public class AuthService {
         // Now fully active — issue a token so they're logged straight in.
         String token = jwt.issue(u.getUsername(), u.getRole());
         return new LoginResult(true, false, token, u.getRole(), "Password changed successfully.");
+    }
+
+    public java.util.Map<String,String> getPrefs(String username) {
+        AdminUser u = users.findByUsername(username).orElse(null);
+        String theme = u != null && u.getTheme() != null ? u.getTheme() : "midnight";
+        String accent = u != null && u.getAccent() != null ? u.getAccent() : "blue";
+        return java.util.Map.of("theme", theme, "accent", accent);
+    }
+
+    public java.util.Map<String,String> savePrefs(String username, String theme, String accent) {
+        AdminUser u = users.findByUsername(username).orElse(null);
+        if (u != null) {
+            if (theme != null) u.setTheme(theme);
+            if (accent != null) u.setAccent(accent);
+            users.save(u);
+        }
+        return getPrefs(username);
     }
 }

@@ -206,6 +206,9 @@ This is a working platform with a clean, extensible architecture:
 - ✅ **Organogram** (live org chart from reporting lines)
 - ✅ **HR & Recruitment** (candidate pipeline + **AI interview engine**: role-aware questions, answers, and scoring via the connector layer with simulation fallback)
 - ✅ **Email integration** (outbox-first; **SMTP configured & connection-tested from the portal Settings screen**; auto-emails on candidate status, interview results & meeting invites)
+- ✅ **Themes & branding** (selectable colour themes/accents, custom portal name & logo — from Settings)
+- ✅ **Bulk staff enrolment via Excel** (.xlsx upload with a downloadable sample template)
+- ✅ **Audit trail** (logins, staff changes, candidate decisions, imports)
 
 Contributions welcome.
 

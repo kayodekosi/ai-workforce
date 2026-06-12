@@ -58,8 +58,53 @@ function enterApp(){
   el('shell').classList.remove('hidden');
   el('whoami').textContent = USER;
   el('sideRole').textContent = ROLE + ' PORTAL';
+  applyBranding();
   connectWs();
   loadAll();
+}
+
+// ---------- BRANDING / THEME ----------
+const ACCENTS = ['blue','teal','green','purple','pink','amber','red'];
+const ACCENT_HEX = {blue:'#3b82f6',teal:'#0ea5e9',green:'#10b981',purple:'#8b5cf6',pink:'#ec4899',amber:'#f59e0b',red:'#ef4444'};
+let BRANDING = {portalName:'AI-Workforce',logoUrl:'',theme:'midnight',accent:'blue'};
+
+// Apply branding at page load (before login) — the GET is public.
+async function brandLoginPage(){
+  try{
+    const res = await fetch('/api/portal/settings');
+    if(!res.ok) return;
+    const s = await res.json();
+    BRANDING = s;
+    applyThemeAttrs(s.theme, s.accent);
+    const lt = document.getElementById('loginTitle');
+    if(lt) lt.textContent = (s.logoUrl ? '' : '🤖 ') + (s.portalName||'AI-Workforce');
+    if(s.logoUrl && lt){
+      let img = document.getElementById('loginLogo');
+      if(!img){ img=document.createElement('img'); img.id='loginLogo'; img.style.cssText='max-height:46px;margin-bottom:10px;display:block;'; lt.parentNode.insertBefore(img, lt); }
+      img.src = s.logoUrl;
+    }
+  }catch(_){}
+}
+brandLoginPage();
+function applyThemeAttrs(theme, accent){
+  const root = document.documentElement;
+  if(theme && theme!=='midnight') root.setAttribute('data-theme',theme); else root.removeAttribute('data-theme');
+  if(accent) root.setAttribute('data-accent',accent); else root.removeAttribute('data-accent');
+}
+async function applyBranding(){
+  try{
+    const s = await api('/portal/settings');
+    BRANDING = s;
+    applyThemeAttrs(s.theme, s.accent);
+    // apply portal name + logo to sidebar
+    const h2 = document.querySelector('.side h2');
+    if(h2) h2.textContent = s.portalName || 'AI-Workforce';
+    if(s.logoUrl){
+      let img = document.getElementById('sideLogo');
+      if(!img){ img=document.createElement('img'); img.id='sideLogo'; img.style.cssText='max-height:30px;margin-bottom:8px;display:block;'; h2.parentNode.insertBefore(img,h2); }
+      img.src = s.logoUrl;
+    }
+  }catch(_){}
 }
 
 // ---------- WEBSOCKET (real-time chat) ----------
@@ -104,13 +149,14 @@ function appendLiveMessage(m){
 
 // ---------- NAV ----------
 function nav(view){
-  ['staff','company','organogram','hr','chat','calendar','email','connectors','settings'].forEach(v=>{
+  ['staff','company','organogram','hr','chat','calendar','email','audit','connectors','settings'].forEach(v=>{
     el('view-'+v).classList.toggle('hidden', v!==view);
   });
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
   if(view==='chat') loadChannels();
   if(view==='calendar') loadMeetings();
   if(view==='email') loadEmails();
+  if(view==='audit') loadAudit();
   if(view==='connectors') loadConnectors();
   if(view==='settings') loadSettings();
   if(view==='organogram') renderOrganogram();
@@ -271,6 +317,44 @@ document.addEventListener('change', e=>{
     el('aiFields').style.display = e.target.value==='AI' ? 'block' : 'none';
   }
 });
+
+// ---------- AUDIT ----------
+async function loadAudit(){
+  const list = await api('/audit?limit=200');
+  el('auditRows').innerHTML = list.length ? list.map(e=>{
+    const when = e.at ? new Date(e.at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
+    return `<tr>
+      <td style="color:var(--muted2);font-size:12px;white-space:nowrap;">${when}</td>
+      <td>${e.actor||'system'}</td>
+      <td><span class="pill ai">${e.action||''}</span></td>
+      <td style="color:var(--ink);font-size:13px;">${(e.detail||'').replace(/</g,'&lt;')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" style="color:var(--muted2)">No activity recorded yet.</td></tr>`;
+}
+
+// ---------- STAFF EXCEL IMPORT ----------
+function downloadSample(){
+  // fetch with auth then trigger a download (the endpoint requires a token)
+  fetch('/api/staff-import/sample', {headers:{'Authorization':'Bearer '+TOKEN}})
+    .then(r=>r.blob()).then(b=>{
+      const url=URL.createObjectURL(b); const a=document.createElement('a');
+      a.href=url; a.download='staff-import-template.xlsx'; a.click(); URL.revokeObjectURL(url);
+    }).catch(e=>alert('Download failed: '+e.message));
+}
+async function uploadStaff(input){
+  const file = input.files[0]; if(!file) return;
+  const fd = new FormData(); fd.append('file', file);
+  el('importMsg').innerHTML = `<div class="msg" style="background:#11203b;color:var(--muted2)">Importing…</div>`;
+  try{
+    const res = await fetch('/api/staff-import', {method:'POST',
+      headers:{'Authorization':'Bearer '+TOKEN}, body:fd});
+    const r = await res.json();
+    const errs = (r.errors&&r.errors.length) ? ` (${r.errors.length} skipped: ${r.errors.slice(0,3).join('; ')}${r.errors.length>3?'…':''})` : '';
+    el('importMsg').innerHTML = `<div class="msg ok">Imported ${r.created||0} staff${errs}</div>`;
+    loadStaff();
+  }catch(e){ el('importMsg').innerHTML = `<div class="msg err">${e.message}</div>`; }
+  input.value='';
+}
 
 // ---------- EMAIL ----------
 const EMAIL_STATUS_COL = {PENDING:'#fbbf24',SENT:'#34d399',FAILED:'#ef4444'};
@@ -522,7 +606,37 @@ function loadSettings(){
   el('setRole').textContent = ROLE;
   el('settingsMsg').innerHTML = '';
   el('smtpMsg').innerHTML = '';
+  loadBranding();
   loadSmtp();
+}
+function loadBranding(){
+  el('brName').value = BRANDING.portalName||'AI-Workforce';
+  el('brLogo').value = BRANDING.logoUrl||'';
+  el('brTheme').value = BRANDING.theme||'midnight';
+  // live theme preview on change
+  el('brTheme').onchange = ()=>applyThemeAttrs(el('brTheme').value, currentAccent());
+  el('accentSwatches').innerHTML = ACCENTS.map(a=>
+    `<button onclick="pickAccent('${a}')" data-acc="${a}" title="${a}"
+      style="width:26px;height:26px;border-radius:50%;border:2px solid ${a===(BRANDING.accent||'blue')?'#fff':'transparent'};background:${ACCENT_HEX[a]};cursor:pointer;"></button>`
+  ).join('');
+}
+function currentAccent(){
+  const sel = document.querySelector('#accentSwatches button[style*="2px solid rgb(255"]');
+  return sel ? sel.dataset.acc : (BRANDING.accent||'blue');
+}
+function pickAccent(a){
+  document.querySelectorAll('#accentSwatches button').forEach(b=>b.style.border='2px solid transparent');
+  const btn = document.querySelector(`#accentSwatches button[data-acc="${a}"]`);
+  if(btn) btn.style.border='2px solid #fff';
+  applyThemeAttrs(el('brTheme').value, a);
+}
+async function saveBranding(){
+  const body={portalName:el('brName').value,logoUrl:el('brLogo').value,theme:el('brTheme').value,accent:currentAccent()};
+  try{
+    BRANDING = await api('/portal/settings',{method:'PUT',body:JSON.stringify(body)});
+    applyBranding();
+    el('brandMsg').innerHTML=`<div class="msg ok">Branding saved &amp; applied.</div>`;
+  }catch(e){ el('brandMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
 }
 async function loadSmtp(){
   try{

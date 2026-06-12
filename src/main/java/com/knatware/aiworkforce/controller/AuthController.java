@@ -24,4 +24,16 @@ public class AuthController {
     public AuthService.LoginResult changePassword(@RequestBody ChangePasswordRequest req) {
         return auth.changePassword(req.username(), req.oldPassword(), req.newPassword());
     }
+
+    public record PrefsRequest(String username, String theme, String accent) {}
+
+    @GetMapping("/prefs")
+    public java.util.Map<String,String> getPrefs(@RequestParam String username) {
+        return auth.getPrefs(username);
+    }
+
+    @PutMapping("/prefs")
+    public java.util.Map<String,String> savePrefs(@RequestBody PrefsRequest req) {
+        return auth.savePrefs(req.username(), req.theme(), req.accent());
+    }
 }

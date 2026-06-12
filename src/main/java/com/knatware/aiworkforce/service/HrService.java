@@ -22,10 +22,12 @@ public class HrService {
 
     private final CandidateRepository candidates;
     private final EmailService email;
+    private final AuditService audit;
 
-    public HrService(CandidateRepository candidates, EmailService email) {
+    public HrService(CandidateRepository candidates, EmailService email, AuditService audit) {
         this.candidates = candidates;
         this.email = email;
+        this.audit = audit;
     }
 
     public List<Candidate> all() { return candidates.findAllByOrderByAppliedAtDesc(); }
@@ -40,6 +42,7 @@ public class HrService {
         Candidate c = candidates.findById(id).orElseThrow();
         c.setStatus(status);
         Candidate saved = candidates.save(c);
+        audit.log(null, "CANDIDATE_STATUS", "Candidate '" + saved.getFullName() + "' -> " + status);
         notifyStatus(saved);
         return saved;
     }

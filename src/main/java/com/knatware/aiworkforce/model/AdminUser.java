@@ -22,6 +22,9 @@ public class AdminUser {
     private String role = "ADMIN";          // ADMIN or OPERATOR
     private boolean mustChangePassword = true;
 
+    private String theme = "midnight";      // UI theme preference
+    private String accent = "blue";         // UI accent preference
+
     /** Optionally link a login to a human Staff record. */
     @OneToOne
     private Staff staff;
@@ -38,6 +41,10 @@ public class AdminUser {
     public void setRole(String role) { this.role = role; }
     public boolean isMustChangePassword() { return mustChangePassword; }
     public void setMustChangePassword(boolean mustChangePassword) { this.mustChangePassword = mustChangePassword; }
+    public String getTheme() { return theme; }
+    public void setTheme(String theme) { this.theme = theme; }
+    public String getAccent() { return accent; }
+    public void setAccent(String accent) { this.accent = accent; }
     public Staff getStaff() { return staff; }
     public void setStaff(Staff staff) { this.staff = staff; }
 }

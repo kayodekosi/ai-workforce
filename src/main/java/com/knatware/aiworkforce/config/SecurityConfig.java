@@ -50,6 +50,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/index.html", "/app/**", "/static/**",
                                  "/favicon.ico", "/error", "/ws/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/portal/settings").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 // --- admin-only writes ---
                 .requestMatchers(HttpMethod.POST,   "/api/staff/**").hasRole("ADMIN")
@@ -60,6 +61,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/meetings/**").authenticated()
                 .requestMatchers("/api/hr/**").authenticated()
                 .requestMatchers("/api/emails/**").authenticated()
+                .requestMatchers("/api/audit/**").authenticated()
+                .requestMatchers("/api/staff-import/**").authenticated()
+                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/portal/settings").authenticated()
                 // --- read + chat: any authenticated user ---
                 .anyRequest().authenticated()
             )
