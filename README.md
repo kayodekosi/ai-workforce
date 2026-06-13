@@ -62,12 +62,7 @@ AI staff don't hard-code any one provider. Each staff member points at a backend
 
 Adding a new backend is a single class — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-**Connecting a real backend:** see **[docs/N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md)** for a
-step-by-step guide to wiring AI staff to n8n,
-**[docs/N8N_MEMORY.md](docs/N8N_MEMORY.md)** for giving AI staff conversation memory,
-**[docs/N8N_RAG_KNOWLEDGE.md](docs/N8N_RAG_KNOWLEDGE.md)** for long-term knowledge (RAG / vector store), and
-**[docs/DIFY_FLOWISE_LANGFLOW_INTEGRATION.md](docs/DIFY_FLOWISE_LANGFLOW_INTEGRATION.md)**
-for Dify, Flowise, and Langflow.
+**Connecting a real backend:** For a step-by-step guide to wiring AI staff to n8n, giving AI staff conversation memory, long-term knowledge (RAG / vector store), and Dify, Flowise, and Langflow, contact **Kayode Okosi** — [kayodeokosi@gmail.com](mailto:kayodeokosi@gmail.com)
 
 ## 🚀 Quick start
 
