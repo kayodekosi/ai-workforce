@@ -76,8 +76,10 @@ async function brandLoginPage(){
     const s = await res.json();
     BRANDING = s;
     applyThemeAttrs(s.theme, s.accent);
+    const portalName = s.portalName || 'AI-Workforce';
+    document.title = portalName + ' · Admin Portal';
     const lt = document.getElementById('loginTitle');
-    if(lt) lt.textContent = (s.logoUrl ? '' : '🤖 ') + (s.portalName||'AI-Workforce');
+    if(lt) lt.textContent = (s.logoUrl ? '' : '🤖 ') + portalName;
     if(s.logoUrl && lt){
       let img = document.getElementById('loginLogo');
       if(!img){ img=document.createElement('img'); img.id='loginLogo'; img.style.cssText='max-height:46px;margin-bottom:10px;display:block;'; lt.parentNode.insertBefore(img, lt); }
@@ -85,7 +87,11 @@ async function brandLoginPage(){
     }
   }catch(_){}
 }
-brandLoginPage();
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', brandLoginPage);
+} else {
+  brandLoginPage();
+}
 function applyThemeAttrs(theme, accent){
   const root = document.documentElement;
   if(theme && theme!=='midnight') root.setAttribute('data-theme',theme); else root.removeAttribute('data-theme');
@@ -168,9 +174,27 @@ async function loadAll(){ await Promise.all([loadStaff(), loadCompany()]); }
 // ---------- STAFF ----------
 async function loadStaff(){
   STAFF = await api('/staff');
+  renderStaffRows();
+}
+
+function renderStaffRows(){
+  const q = (el('staffSearch') && el('staffSearch').value || '').trim().toLowerCase();
+  const ft = (el('staffFilterType') && el('staffFilterType').value) || '';
+  const fs = (el('staffFilterStatus') && el('staffFilterStatus').value) || '';
+  const matches = (s)=>{
+    if(ft && s.type!==ft) return false;
+    if(fs && s.status!==fs) return false;
+    if(!q) return true;
+    const hay = [s.fullName,s.email,s.position,s.function,s.phoneExtension,
+                 s.department&&s.department.name, s.level&&s.level.name, s.type, s.status]
+                 .filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  };
+  const filtered = STAFF.filter(matches);
   const ai = STAFF.filter(s=>s.type==='AI').length;
-  el('staffSub').textContent = `${STAFF.length} staff · ${ai} AI · ${STAFF.length-ai} human`;
-  el('staffRows').innerHTML = STAFF.map(s=>{
+  el('staffSub').textContent = `${STAFF.length} staff · ${ai} AI · ${STAFF.length-ai} human`
+    + (filtered.length!==STAFF.length ? ` · ${filtered.length} shown` : '');
+  el('staffRows').innerHTML = filtered.length ? filtered.map(s=>{
     const st = s.status==='ACTIVE' ? ['#34d399','Online'] :
                s.status==='ON_LEAVE' ? ['#fbbf24','On Leave'] :
                s.status==='OFFBOARDED' ? ['#64748b','Offboarded'] : ['#64748b', s.status];
@@ -188,7 +212,7 @@ async function loadStaff(){
           : `<button class="btn ghost sm" onclick="staffAction(${s.id},'leave')">Leave</button>`}
         <button class="btn ghost sm" onclick="removeStaff(${s.id},'${(s.fullName||'').replace(/'/g,"")}')">✕ Remove</button>
       </td></tr>`;
-  }).join('');
+  }).join('') : `<tr><td colspan="6" style="color:var(--muted2)">No staff match your search.</td></tr>`;
 }
 
 async function staffAction(id, action){
@@ -293,6 +317,7 @@ async function saveStaff(){
 async function loadCompany(){
   const list = await api('/company');
   const c = (list && list[0]) || {};
+  if(c.name) setCompanyTitle(c.name);
   el('companyCard').innerHTML = `
     <div class="grid2">
       <div class="field"><label>Company name</label><input id="cName" value="${c.name||''}"></div>
@@ -313,8 +338,20 @@ async function loadCompany(){
 }
 async function saveCompany(id){
   const body={name:el('cName').value,industry:el('cIndustry').value,description:el('cDesc').value,url:el('cUrl').value,address:el('cAddr').value};
-  try{ await api('/company/'+id,{method:'PUT',body:JSON.stringify(body)}); alert('Company saved.'); }
+  try{
+    await api('/company/'+id,{method:'PUT',body:JSON.stringify(body)});
+    setCompanyTitle(body.name);
+    await loadCompany();          // refresh the form with saved values
+    el('companyMsg') && (el('companyMsg').innerHTML='');
+    alert('Company saved.');
+  }
   catch(e){ alert('Save failed: '+e.message+(ROLE!=='ADMIN'?' (ADMIN only)':'')); }
+}
+function setCompanyTitle(name){
+  // Browser tab shows the company name if set, otherwise the portal name.
+  document.title = name && name.trim()
+    ? name.trim() + ' · Admin Portal'
+    : ((BRANDING && BRANDING.portalName) ? BRANDING.portalName : 'AI-Workforce') + ' · Admin Portal';
 }
 async function addDept(){
   try{ await api('/company/departments',{method:'POST',body:JSON.stringify({name:el('newDept').value})}); loadCompany(); }
@@ -429,6 +466,14 @@ function downloadSample(){
       a.href=url; a.download='staff-import-template.xlsx'; a.click(); URL.revokeObjectURL(url);
     }).catch(e=>alert('Download failed: '+e.message));
 }
+function exportStaff(){
+  fetch('/api/staff-import/export', {headers:{'Authorization':'Bearer '+TOKEN}})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+    .then(b=>{
+      const url=URL.createObjectURL(b); const a=document.createElement('a');
+      a.href=url; a.download='staff-roster.xlsx'; a.click(); URL.revokeObjectURL(url);
+    }).catch(e=>alert('Export failed: '+e.message));
+}
 async function uploadStaff(input){
   const file = input.files[0]; if(!file) return;
   const fd = new FormData(); fd.append('file', file);
@@ -440,6 +485,7 @@ async function uploadStaff(input){
     const errs = (r.errors&&r.errors.length) ? ` (${r.errors.length} skipped: ${r.errors.slice(0,3).join('; ')}${r.errors.length>3?'…':''})` : '';
     el('importMsg').innerHTML = `<div class="msg ok">Imported ${r.created||0} staff${errs}</div>`;
     loadStaff();
+    loadCompany();   // refresh departments & levels created during import
   }catch(e){ el('importMsg').innerHTML = `<div class="msg err">${e.message}</div>`; }
   input.value='';
 }
@@ -601,21 +647,21 @@ function renderOrganogram(){
     const node = byId[s.id];
     const parentId = s.reportsTo && s.reportsTo.id;
     if(parentId && byId[parentId]) byId[parentId].children.push(node);
-    else roots.push(node);
+    else roots.push(node);   // unassigned (no manager) -> top level
   });
   const card = (n)=>{
     const ai = n.type==='AI';
-    return `<div class="org-node">
+    return `<li>
       <div class="org-card">
         <span class="avatar" style="background:${colorFor(n.id)};width:26px;height:26px;font-size:11px;">${initials(n.fullName)}</span>
-        <div><div style="color:#fff;font-size:13px;font-weight:600;">${n.fullName||''}</div>
-        <div style="color:var(--muted2);font-size:11px;">${n.position||''} ${ai?'· <span style="color:var(--accent2)">AI</span>':'· <span style="color:var(--warn)">Human</span>'}</div></div>
+        <div><div style="color:#fff;font-size:13px;font-weight:600;">${(n.fullName||'').replace(/</g,'&lt;')}</div>
+        <div style="color:var(--muted2);font-size:11px;">${(n.position||'').replace(/</g,'&lt;')} ${ai?'· <span style="color:var(--accent2)">AI</span>':'· <span style="color:var(--warn)">Human</span>'}</div></div>
       </div>
-      ${n.children.length ? `<div class="org-children">${n.children.map(card).join('')}</div>` : ''}
-    </div>`;
+      ${n.children.length ? `<ul>${n.children.map(card).join('')}</ul>` : ''}
+    </li>`;
   };
   el('orgTree').innerHTML = roots.length
-    ? `<div class="org-root">${roots.map(card).join('')}</div>`
+    ? `<div class="org-root"><ul class="org-tree">${roots.map(card).join('')}</ul></div>`
     : `<div style="color:var(--muted2)">No staff yet.</div>`;
 }
 
@@ -720,11 +766,22 @@ function pickAccent(a){
 }
 async function saveBranding(){
   const body={portalName:el('brName').value,logoUrl:el('brLogo').value,theme:el('brTheme').value,accent:currentAccent()};
+  el('brandMsg').innerHTML=`<div class="msg" style="background:#11203b;color:var(--muted2)">Saving…</div>`;
   try{
-    BRANDING = await api('/portal/settings',{method:'PUT',body:JSON.stringify(body)});
-    applyBranding();
-    el('brandMsg').innerHTML=`<div class="msg ok">Branding saved &amp; applied.</div>`;
-  }catch(e){ el('brandMsg').innerHTML=`<div class="msg err">${e.message}</div>`; }
+    const saved = await api('/portal/settings',{method:'PUT',body:JSON.stringify(body)});
+    BRANDING = saved;
+    // update visible chrome immediately
+    const h2 = document.querySelector('.side h2');
+    if(h2) h2.textContent = BRANDING.portalName || 'AI-Workforce';
+    setCompanyTitle(null);
+    applyThemeAttrs(BRANDING.theme, BRANDING.accent);
+    // verify by re-reading from the server
+    const check = await api('/portal/settings');
+    const persisted = check && check.portalName;
+    el('brandMsg').innerHTML = `<div class="msg ok">Saved. Server now reports portal name: <b>${persisted}</b>.
+      ${persisted===body.portalName ? 'Persisted correctly ✓ — sign out to see it on the login page.'
+        : 'WARNING: server returned a different value — the database may be resetting.'}</div>`;
+  }catch(e){ el('brandMsg').innerHTML=`<div class="msg err">Save failed: ${e.message}</div>`; }
 }
 async function loadSmtp(){
   try{

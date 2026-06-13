@@ -10,6 +10,11 @@ services:
       # The port the app listens on INSIDE the container.
       # If you change this, update the container side of the port mapping above too.
       SERVER_PORT: 8080
+    volumes:
+      # Named volume (managed by Docker) — reliably persists the H2 database
+      # across `docker compose up --build`, including on WSL where host bind-mounts
+      # under /mnt/c can have permission quirks.
+      - aiworkforce-data:/app/data
     restart: unless-stopped
 
   # ---- Optional: PostgreSQL for production instead of in-memory H2 ----
@@ -29,6 +34,9 @@ services:
   #   SPRING_DATASOURCE_USERNAME: aiworkforce
   #   SPRING_DATASOURCE_PASSWORD: changeme
   #   SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+
+volumes:
+  aiworkforce-data:
 
 # volumes:
 #   pgdata:

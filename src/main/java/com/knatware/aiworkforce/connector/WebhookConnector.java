@@ -45,7 +45,9 @@ public class WebhookConnector implements AiConnector {
                             "systemPrompt", staff.getSystemPrompt() == null ? "" : staff.getSystemPrompt(),
                             "model", staff.getModel() == null ? "" : staff.getModel(),
                             "message", message,
-                            "staffName", staff.getFullName()
+                            "staffName", staff.getFullName(),
+                            "staffId", staff.getId() == null ? "" : staff.getId().toString(),
+                            "sessionId", staff.getId() == null ? "anon" : ("staff-" + staff.getId())
                     ))
                     .retrieve()
                     .body(Map.class);

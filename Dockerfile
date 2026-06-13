@@ -12,6 +12,9 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/ai-workforce.jar app.jar
 
+# Directory for the persistent H2 database (mounted as a volume in compose)
+RUN mkdir -p /app/data
+
 # The port the app listens on. Override at runtime with -e SERVER_PORT=xxxx
 ENV SERVER_PORT=8080
 EXPOSE 8080

@@ -39,4 +39,14 @@ public class StaffImportController {
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(new ByteArrayResource(bytes));
     }
+
+    @GetMapping("/export")
+    public ResponseEntity<ByteArrayResource> export() throws Exception {
+        byte[] bytes = importer.exportAll();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=staff-roster.xlsx")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new ByteArrayResource(bytes));
+    }
 }

@@ -29,7 +29,7 @@
 <body>
   <div class="card">
     <div class="badge"><span class="dot"></span> Application is running</div>
-    <h1>🤖 AI-Workforce</h1>
+    <h1 id="wTitle">🤖 AI-Workforce</h1>
     <div class="sub">Your configurable AI-staffed virtual company platform.</div>
 
     <div class="row">
@@ -50,5 +50,22 @@
     <div class="foot">AI-Workforce · built by <a href="https://github.com/kayodekosi" target="_blank">Kayode Okosi</a><br>
     Need setup help? <a href="mailto:kayodeokosi@gmail.com">kayodeokosi@gmail.com</a> · <a href="mailto:kayode@knatware.com">kayode@knatware.com</a></div>
   </div>
+  <script>
+    // Apply portal branding (name/logo) to the welcome page — GET is public.
+    fetch('/api/portal/settings').then(r=>r.ok?r.json():null).then(s=>{
+      if(!s) return;
+      const name = s.portalName || 'AI-Workforce';
+      document.title = name;
+      const t = document.getElementById('wTitle');
+      if(t) t.textContent = (s.logoUrl ? '' : '🤖 ') + name;
+      if(s.logoUrl && t){
+        const img = document.createElement('img');
+        img.src = s.logoUrl; img.style.cssText='max-height:48px;margin-bottom:10px;display:block;';
+        t.parentNode.insertBefore(img, t);
+      }
+      if(s.theme && s.theme!=='midnight') document.documentElement.setAttribute('data-theme', s.theme);
+      if(s.accent) document.documentElement.setAttribute('data-accent', s.accent);
+    }).catch(()=>{});
+  </script>
 </body>
 </html>

@@ -23,12 +23,17 @@ public class PortalController {
 
     @PutMapping("/settings")
     public PortalSettings save(@RequestBody PortalSettings incoming) {
-        PortalSettings s = repo.findById(1L).orElseGet(PortalSettings::new);
+        PortalSettings s = repo.findById(1L).orElseGet(() -> {
+            PortalSettings n = new PortalSettings();
+            n.setId(1L);
+            return n;
+        });
         s.setId(1L);
-        if (incoming.getPortalName() != null) s.setPortalName(incoming.getPortalName());
+        if (incoming.getPortalName() != null && !incoming.getPortalName().isBlank())
+            s.setPortalName(incoming.getPortalName().trim());
         s.setLogoUrl(incoming.getLogoUrl());
         if (incoming.getTheme() != null) s.setTheme(incoming.getTheme());
         if (incoming.getAccent() != null) s.setAccent(incoming.getAccent());
-        return repo.save(s);
+        return repo.saveAndFlush(s);
     }
 }

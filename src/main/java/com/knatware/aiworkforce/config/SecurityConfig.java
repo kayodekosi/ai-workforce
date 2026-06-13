@@ -53,12 +53,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/portal/settings").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 // --- admin-only writes ---
-                .requestMatchers(HttpMethod.POST,   "/api/staff/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/staff/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/staff/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT,    "/api/company/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST,   "/api/company/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/company/**").hasRole("ADMIN")
+                // staff & company config: any authenticated user (single-admin friendly)
+                .requestMatchers("/api/staff/**").authenticated()
+                .requestMatchers("/api/company/**").authenticated()
                 // --- meetings & HR: any authenticated user ---
                 .requestMatchers("/api/meetings/**").authenticated()
                 .requestMatchers("/api/hr/**").authenticated()
